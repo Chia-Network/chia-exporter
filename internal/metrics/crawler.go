@@ -8,7 +8,7 @@ import (
 	"github.com/cmmarslender/go-chia-rpc/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
 
-	prometheus2 "github.com/chia-network/chia-exporter/internal/prometheus"
+	wrappedPrometheus "github.com/chia-network/chia-exporter/internal/prometheus"
 	"github.com/chia-network/chia-exporter/internal/utils"
 )
 
@@ -20,10 +20,10 @@ type CrawlerServiceMetrics struct {
 	metrics *Metrics
 
 	// Crawler Metrics
-	totalNodes5Days *prometheus2.LazyGauge
-	reliableNodes   *prometheus2.LazyGauge
-	ipv4Nodes5Days  *prometheus2.LazyGauge
-	ipv6Nodes5Days  *prometheus2.LazyGauge
+	totalNodes5Days *wrappedPrometheus.LazyGauge
+	reliableNodes   *wrappedPrometheus.LazyGauge
+	ipv4Nodes5Days  *wrappedPrometheus.LazyGauge
+	ipv6Nodes5Days  *wrappedPrometheus.LazyGauge
 	versionBuckets  *prometheus.GaugeVec
 }
 

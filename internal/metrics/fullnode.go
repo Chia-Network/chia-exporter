@@ -9,7 +9,7 @@ import (
 	"github.com/cmmarslender/go-chia-rpc/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
 
-	prometheus2 "github.com/chia-network/chia-exporter/internal/prometheus"
+	wrappedPrometheus "github.com/chia-network/chia-exporter/internal/prometheus"
 	"github.com/chia-network/chia-exporter/internal/utils"
 )
 
@@ -21,26 +21,26 @@ type FullNodeServiceMetrics struct {
 	metrics *Metrics
 
 	// GetBlockchainState Metrics
-	difficulty    *prometheus2.LazyGauge
-	mempoolCost   *prometheus2.LazyGauge
+	difficulty    *wrappedPrometheus.LazyGauge
+	mempoolCost   *wrappedPrometheus.LazyGauge
 	mempoolMinFee *prometheus.GaugeVec
-	mempoolSize   *prometheus2.LazyGauge
-	netspaceMiB   *prometheus2.LazyGauge
-	nodeHeight    *prometheus2.LazyGauge
-	nodeSynced    *prometheus2.LazyGauge
+	mempoolSize   *wrappedPrometheus.LazyGauge
+	netspaceMiB   *wrappedPrometheus.LazyGauge
+	nodeHeight    *wrappedPrometheus.LazyGauge
+	nodeSynced    *wrappedPrometheus.LazyGauge
 
 	// BlockCount Metrics
-	compactBlocks   *prometheus2.LazyGauge
-	uncompactBlocks *prometheus2.LazyGauge
-	hintCount       *prometheus2.LazyGauge
+	compactBlocks   *wrappedPrometheus.LazyGauge
+	uncompactBlocks *wrappedPrometheus.LazyGauge
+	hintCount       *wrappedPrometheus.LazyGauge
 
 	// Connection Metrics
 	connectionCount *prometheus.GaugeVec
 
 	// Block Metrics
-	maxBlockCost *prometheus2.LazyGauge
-	blockCost    *prometheus2.LazyGauge
-	blockFees    *prometheus2.LazyGauge
+	maxBlockCost *wrappedPrometheus.LazyGauge
+	blockCost    *wrappedPrometheus.LazyGauge
+	blockFees    *wrappedPrometheus.LazyGauge
 	kSize        *prometheus.CounterVec
 }
 

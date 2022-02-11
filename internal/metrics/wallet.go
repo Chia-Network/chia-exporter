@@ -9,7 +9,7 @@ import (
 	"github.com/cmmarslender/go-chia-rpc/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
 
-	prometheus2 "github.com/chia-network/chia-exporter/internal/prometheus"
+	wrappedPrometheus "github.com/chia-network/chia-exporter/internal/prometheus"
 	"github.com/chia-network/chia-exporter/internal/utils"
 )
 
@@ -21,7 +21,7 @@ type WalletServiceMetrics struct {
 	metrics *Metrics
 
 	// WalletBalanceMetrics
-	walletSynced            *prometheus2.LazyGauge
+	walletSynced            *wrappedPrometheus.LazyGauge
 	confirmedBalance        *prometheus.GaugeVec
 	pendingBalance          *prometheus.GaugeVec
 	spendableBalance        *prometheus.GaugeVec

@@ -10,7 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	prometheus2 "github.com/chia-network/chia-exporter/internal/prometheus"
+	wrappedPrometheus "github.com/chia-network/chia-exporter/internal/prometheus"
 )
 
 type chiaService string
@@ -77,7 +77,7 @@ func NewMetrics(port uint16) (*Metrics, error) {
 }
 
 // newGauge returns a lazy gauge that follows naming conventions
-func (m *Metrics) newGauge(service chiaService, name string, help string) (*prometheus2.LazyGauge, error) {
+func (m *Metrics) newGauge(service chiaService, name string, help string) (*wrappedPrometheus.LazyGauge, error) {
 	opts := prometheus.GaugeOpts{
 		Namespace: "chia",
 		Subsystem: string(service),
@@ -87,7 +87,7 @@ func (m *Metrics) newGauge(service chiaService, name string, help string) (*prom
 
 	gm := prometheus.NewGauge(opts)
 
-	lg := &prometheus2.LazyGauge{
+	lg := &wrappedPrometheus.LazyGauge{
 		Gauge:    gm,
 		Registry: m.registry,
 	}
@@ -113,7 +113,7 @@ func (m *Metrics) newGaugeVec(service chiaService, name string, help string, lab
 }
 
 // newGauge returns a counter that follows naming conventions and registers it with the prometheus collector
-func (m *Metrics) newCounter(service chiaService, name string, help string) (*prometheus2.LazyCounter, error) {
+func (m *Metrics) newCounter(service chiaService, name string, help string) (*wrappedPrometheus.LazyCounter, error) {
 	opts := prometheus.CounterOpts{
 		Namespace: "chia",
 		Subsystem: string(service),
@@ -123,7 +123,7 @@ func (m *Metrics) newCounter(service chiaService, name string, help string) (*pr
 
 	cm := prometheus.NewCounter(opts)
 
-	lc := &prometheus2.LazyCounter{
+	lc := &wrappedPrometheus.LazyCounter{
 		Counter: cm,
 	}
 
