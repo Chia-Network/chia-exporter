@@ -14,18 +14,8 @@ func main() {
 		log.Fatalln(err.Error())
 	}
 
-	// Loop until we get a connection or cancel
-	// This enables starting the metrics exporter even if the chia RPC service is not up/responding
-	// It just retries every 5 seconds to connect to the RPC server until it succeeds or the app is stopped
-	for {
-		err = m.OpenWebsocket()
-		if err != nil {
-			log.Println(err.Error())
-			time.Sleep(5 * time.Second)
-			continue
-		}
-		break
-	}
+	// Run this in the background, so the metrics healthz endpoint can come up while waiting for Chia
+	go startWebsocket(m)
 
 	// Close the websocket when the app is closing
 	// @TODO need to actually listen for a signal and call this then, otherwise it doesn't actually get called
@@ -38,4 +28,19 @@ func main() {
 	}(m)
 
 	log.Fatalln(m.StartServer())
+}
+
+func startWebsocket(m *metrics.Metrics) {
+	// Loop until we get a connection or cancel
+	// This enables starting the metrics exporter even if the chia RPC service is not up/responding
+	// It just retries every 5 seconds to connect to the RPC server until it succeeds or the app is stopped
+	for {
+		err := m.OpenWebsocket()
+		if err != nil {
+			log.Println(err.Error())
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		break
+	}
 }
