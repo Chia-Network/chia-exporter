@@ -30,11 +30,11 @@ type CrawlerServiceMetrics struct {
 // InitMetrics sets all the metrics properties
 func (s *CrawlerServiceMetrics) InitMetrics() {
 	// Crawler Metrics
-	s.totalNodes5Days, _ = s.metrics.newGauge(chiaServiceCrawler, "total_nodes_5_days", "")
-	s.reliableNodes, _ = s.metrics.newGauge(chiaServiceCrawler, "reliable_nodes", "reliable nodes are nodes that have port 8444 open and have available space for more peer connections")
-	s.ipv4Nodes5Days, _ = s.metrics.newGauge(chiaServiceCrawler, "ipv4_nodes_5_days", "")
-	s.ipv6Nodes5Days, _ = s.metrics.newGauge(chiaServiceCrawler, "ipv6_nodes_5_days", "")
-	s.versionBuckets, _ = s.metrics.newGaugeVec(chiaServiceCrawler, "version_bucket", "", []string{"version"})
+	s.totalNodes5Days = s.metrics.newGauge(chiaServiceCrawler, "total_nodes_5_days", "")
+	s.reliableNodes = s.metrics.newGauge(chiaServiceCrawler, "reliable_nodes", "reliable nodes are nodes that have port 8444 open and have available space for more peer connections")
+	s.ipv4Nodes5Days = s.metrics.newGauge(chiaServiceCrawler, "ipv4_nodes_5_days", "")
+	s.ipv6Nodes5Days = s.metrics.newGauge(chiaServiceCrawler, "ipv6_nodes_5_days", "")
+	s.versionBuckets = s.metrics.newGaugeVec(chiaServiceCrawler, "version_bucket", "", []string{"version"})
 }
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with

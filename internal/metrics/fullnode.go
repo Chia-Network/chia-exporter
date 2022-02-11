@@ -47,27 +47,27 @@ type FullNodeServiceMetrics struct {
 // InitMetrics sets all the metrics properties
 func (s *FullNodeServiceMetrics) InitMetrics() {
 	// BlockchainState Metrics
-	s.difficulty, _ = s.metrics.newGauge(chiaServiceFullNode, "difficulty", "")
-	s.mempoolCost, _ = s.metrics.newGauge(chiaServiceFullNode, "mempool_cost", "")
-	s.mempoolMinFee, _ = s.metrics.newGaugeVec(chiaServiceFullNode, "mempool_min_fee", "", []string{"cost"})
-	s.mempoolSize, _ = s.metrics.newGauge(chiaServiceFullNode, "mempool_size", "")
-	s.netspaceMiB, _ = s.metrics.newGauge(chiaServiceFullNode, "netspace_mib", "")
-	s.nodeHeight, _ = s.metrics.newGauge(chiaServiceFullNode, "node_height", "")
-	s.nodeSynced, _ = s.metrics.newGauge(chiaServiceFullNode, "node_synced", "")
+	s.difficulty = s.metrics.newGauge(chiaServiceFullNode, "difficulty", "")
+	s.mempoolCost = s.metrics.newGauge(chiaServiceFullNode, "mempool_cost", "")
+	s.mempoolMinFee = s.metrics.newGaugeVec(chiaServiceFullNode, "mempool_min_fee", "", []string{"cost"})
+	s.mempoolSize = s.metrics.newGauge(chiaServiceFullNode, "mempool_size", "")
+	s.netspaceMiB = s.metrics.newGauge(chiaServiceFullNode, "netspace_mib", "")
+	s.nodeHeight = s.metrics.newGauge(chiaServiceFullNode, "node_height", "")
+	s.nodeSynced = s.metrics.newGauge(chiaServiceFullNode, "node_synced", "")
 
 	// BlockCount Metrics
-	s.compactBlocks, _ = s.metrics.newGauge(chiaServiceFullNode, "compact_blocks", "")
-	s.uncompactBlocks, _ = s.metrics.newGauge(chiaServiceFullNode, "uncompact_blocks", "")
-	s.hintCount, _ = s.metrics.newGauge(chiaServiceFullNode, "hint_count", "")
+	s.compactBlocks = s.metrics.newGauge(chiaServiceFullNode, "compact_blocks", "")
+	s.uncompactBlocks = s.metrics.newGauge(chiaServiceFullNode, "uncompact_blocks", "")
+	s.hintCount = s.metrics.newGauge(chiaServiceFullNode, "hint_count", "")
 
 	// Connection Metrics
-	s.connectionCount, _ = s.metrics.newGaugeVec(chiaServiceFullNode, "connection_count", "", []string{"node_type"})
+	s.connectionCount = s.metrics.newGaugeVec(chiaServiceFullNode, "connection_count", "", []string{"node_type"})
 
 	// Unfinished Block Metrics
-	s.maxBlockCost, _ = s.metrics.newGauge(chiaServiceFullNode, "block_max_cost", "")
-	s.blockCost, _ = s.metrics.newGauge(chiaServiceFullNode, "block_cost", "")
-	s.blockFees, _ = s.metrics.newGauge(chiaServiceFullNode, "block_fees", "")
-	s.kSize, _ = s.metrics.newCounterVec(chiaServiceFullNode, "k_size", "", []string{"size"})
+	s.maxBlockCost = s.metrics.newGauge(chiaServiceFullNode, "block_max_cost", "")
+	s.blockCost = s.metrics.newGauge(chiaServiceFullNode, "block_cost", "")
+	s.blockFees = s.metrics.newGauge(chiaServiceFullNode, "block_fees", "")
+	s.kSize = s.metrics.newCounterVec(chiaServiceFullNode, "k_size", "", []string{"size"})
 }
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with

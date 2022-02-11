@@ -33,13 +33,13 @@ type WalletServiceMetrics struct {
 // InitMetrics sets all the metrics properties
 func (s *WalletServiceMetrics) InitMetrics() {
 	// Wallet Metrics
-	s.walletSynced, _ = s.metrics.newGauge(chiaServiceWallet, "synced", "")
+	s.walletSynced = s.metrics.newGauge(chiaServiceWallet, "synced", "")
 	walletLabels := []string{"fingerprint", "wallet_id"}
-	s.confirmedBalance, _ = s.metrics.newGaugeVec(chiaServiceWallet, "confirmed_balance", "", walletLabels)
-	s.spendableBalance, _ = s.metrics.newGaugeVec(chiaServiceWallet, "spendable_balance", "", walletLabels)
-	s.maxSendAmount, _ = s.metrics.newGaugeVec(chiaServiceWallet, "max_send_amount", "", walletLabels)
-	s.pendingCoinRemovalCount, _ = s.metrics.newGaugeVec(chiaServiceWallet, "pending_coin_removal_count", "", walletLabels)
-	s.unspentCoinCount, _ = s.metrics.newGaugeVec(chiaServiceWallet, "unspent_coin_count", "", walletLabels)
+	s.confirmedBalance = s.metrics.newGaugeVec(chiaServiceWallet, "confirmed_balance", "", walletLabels)
+	s.spendableBalance = s.metrics.newGaugeVec(chiaServiceWallet, "spendable_balance", "", walletLabels)
+	s.maxSendAmount = s.metrics.newGaugeVec(chiaServiceWallet, "max_send_amount", "", walletLabels)
+	s.pendingCoinRemovalCount = s.metrics.newGaugeVec(chiaServiceWallet, "pending_coin_removal_count", "", walletLabels)
+	s.unspentCoinCount = s.metrics.newGaugeVec(chiaServiceWallet, "unspent_coin_count", "", walletLabels)
 }
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with

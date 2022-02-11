@@ -77,7 +77,7 @@ func NewMetrics(port uint16) (*Metrics, error) {
 }
 
 // newGauge returns a lazy gauge that follows naming conventions
-func (m *Metrics) newGauge(service chiaService, name string, help string) (*wrappedPrometheus.LazyGauge, error) {
+func (m *Metrics) newGauge(service chiaService, name string, help string) *wrappedPrometheus.LazyGauge {
 	opts := prometheus.GaugeOpts{
 		Namespace: "chia",
 		Subsystem: string(service),
@@ -92,12 +92,12 @@ func (m *Metrics) newGauge(service chiaService, name string, help string) (*wrap
 		Registry: m.registry,
 	}
 
-	return lg, nil
+	return lg
 }
 
 // newGauge returns a gaugeVec that follows naming conventions and registers it with the prometheus collector
 // This doesn't need a lazy wrapper, as they're inherently lazy registered for each label value provided
-func (m *Metrics) newGaugeVec(service chiaService, name string, help string, labels []string) (*prometheus.GaugeVec, error) {
+func (m *Metrics) newGaugeVec(service chiaService, name string, help string, labels []string) *prometheus.GaugeVec {
 	opts := prometheus.GaugeOpts{
 		Namespace: "chia",
 		Subsystem: string(service),
@@ -109,11 +109,11 @@ func (m *Metrics) newGaugeVec(service chiaService, name string, help string, lab
 
 	m.registry.MustRegister(gm)
 
-	return gm, nil
+	return gm
 }
 
 // newGauge returns a counter that follows naming conventions and registers it with the prometheus collector
-func (m *Metrics) newCounter(service chiaService, name string, help string) (*wrappedPrometheus.LazyCounter, error) {
+func (m *Metrics) newCounter(service chiaService, name string, help string) *wrappedPrometheus.LazyCounter {
 	opts := prometheus.CounterOpts{
 		Namespace: "chia",
 		Subsystem: string(service),
@@ -127,11 +127,11 @@ func (m *Metrics) newCounter(service chiaService, name string, help string) (*wr
 		Counter: cm,
 	}
 
-	return lc, nil
+	return lc
 }
 
 // newCounterVec returns a counter that follows naming conventions and registers it with the prometheus collector
-func (m *Metrics) newCounterVec(service chiaService, name string, help string, labels []string) (*prometheus.CounterVec, error) {
+func (m *Metrics) newCounterVec(service chiaService, name string, help string, labels []string) *prometheus.CounterVec {
 	opts := prometheus.CounterOpts{
 		Namespace: "chia",
 		Subsystem: string(service),
@@ -143,7 +143,7 @@ func (m *Metrics) newCounterVec(service chiaService, name string, help string, l
 
 	m.registry.MustRegister(gm)
 
-	return gm, nil
+	return gm
 }
 
 // OpenWebsocket sets up the RPC client and subscribes to relevant topics
