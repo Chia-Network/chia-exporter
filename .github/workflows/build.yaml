@@ -1,0 +1,30 @@
+name: Build Binaries
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: golang:1
+    strategy:
+      matrix:
+        GOOS: ["linux", "darwin", "windows"]
+        GOARCH: ["amd64", "arm64"]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build Binary
+        env:
+          GOOS: ${{ matrix.GOOS }}
+          GOARCH: ${{ matrix.GOARCH }}
+        run: make build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: chia-exporter-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
+          path: ${{ github.workspace }}/bin/chia-exporter
