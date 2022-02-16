@@ -3,7 +3,7 @@ module github.com/chia-network/chia-exporter
 go 1.17
 
 require (
-	github.com/cmmarslender/go-chia-rpc v0.0.0-20220208043240-62bad39a5e23
+	github.com/cmmarslender/go-chia-rpc v0.0.0-20220216023446-4da338301894
 	github.com/prometheus/client_golang v1.12.0
 )
 
