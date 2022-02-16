@@ -124,7 +124,8 @@ func (m *Metrics) newCounter(service chiaService, name string, help string) *wra
 	cm := prometheus.NewCounter(opts)
 
 	lc := &wrappedPrometheus.LazyCounter{
-		Counter: cm,
+		Counter:  cm,
+		Registry: m.registry,
 	}
 
 	return lc
