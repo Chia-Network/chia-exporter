@@ -213,7 +213,7 @@ func (s *FullNodeServiceMetrics) GetBlockCountMetrics(resp *types.WebsocketRespo
 
 // SignagePoint handles signage point metrics
 func (s *FullNodeServiceMetrics) SignagePoint(resp *types.WebsocketResponse) {
-	signagePoint := types.SignagePointEvent{}
+	signagePoint := &types.SignagePointEvent{}
 	err := json.Unmarshal(resp.Data, signagePoint)
 	if err != nil {
 		log.Printf("Error unmarshalling: %s\n", err.Error())

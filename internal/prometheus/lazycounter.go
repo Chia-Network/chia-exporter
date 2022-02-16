@@ -28,7 +28,7 @@ func (l *LazyCounter) Inc() {
 func (l *LazyCounter) Add(val float64) {
 	if l.registered != true {
 		l.registered = true
-		prometheus.MustRegister(l.Counter)
+		l.Registry.MustRegister(l.Counter)
 	}
 
 	l.Counter.Add(val)
