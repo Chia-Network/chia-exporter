@@ -67,7 +67,28 @@ func (s *TimelordServiceMetrics) FinishedPoTChallenge(resp *types.WebsocketRespo
 
 // NewCompactProof Handles new compact proof events
 func (s *TimelordServiceMetrics) NewCompactProof(resp *types.WebsocketResponse) {
-	// @TODO
+	compactProof := &types.NewCompactProofEvent{}
+	err := json.Unmarshal(resp.Data, compactProof)
+	if err != nil {
+		log.Printf("Error unmarshalling: %s\n", err.Error())
+		return
+	}
+
+	var field string
+	switch compactProof.FieldVdf{
+	case types.CompressibleVDFFieldCCEOSVDF:
+		field = "CC_EOS_VDF"
+	case types.CompressibleVDFFieldICCEOSVDF:
+		field = "ICC_EOS_VDF"
+	case types.CompressibleVDFFieldCCSPVDF:
+		field = "CC_SP_VDF"
+	case types.CompressibleVDFFieldCCIPVDF:
+		field = "CC_IP_VDF"
+	default:
+		return
+	}
+
+	s.compactProofsFound.WithLabelValues(field).Inc()
 }
 
 // SkippingPeak Fastest!
