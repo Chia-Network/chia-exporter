@@ -19,6 +19,7 @@ const (
 	chiaServiceFullNode chiaService = "full_node"
 	chiaServiceWallet   chiaService = "wallet"
 	chiaServiceCrawler  chiaService = "crawler"
+	chiaServiceTimelord chiaService = "timelord"
 )
 
 // serviceMetrics defines methods that must be on all metrics services
@@ -67,6 +68,7 @@ func NewMetrics(port uint16) (*Metrics, error) {
 	metrics.serviceMetrics[chiaServiceFullNode] = &FullNodeServiceMetrics{metrics: metrics}
 	metrics.serviceMetrics[chiaServiceWallet] = &WalletServiceMetrics{metrics: metrics}
 	metrics.serviceMetrics[chiaServiceCrawler] = &CrawlerServiceMetrics{metrics: metrics}
+	metrics.serviceMetrics[chiaServiceTimelord] = &TimelordServiceMetrics{metrics: metrics}
 
 	// Init each service's metrics
 	for _, service := range metrics.serviceMetrics {
@@ -199,6 +201,8 @@ func (m *Metrics) websocketReceive(resp *types.WebsocketResponse, err error) {
 		m.serviceMetrics[chiaServiceWallet].ReceiveResponse(resp)
 	case "chia_crawler":
 		m.serviceMetrics[chiaServiceCrawler].ReceiveResponse(resp)
+	case "chia_timelord":
+		m.serviceMetrics[chiaServiceTimelord].ReceiveResponse(resp)
 	}
 
 	log.Printf("recv: %s %s\n", resp.Origin, resp.Command)
