@@ -45,9 +45,9 @@ type FullNodeServiceMetrics struct {
 	kSize        *prometheus.CounterVec
 
 	// Signage Point Metrics
-	totalSignagePoints *wrappedPrometheus.LazyCounter
+	totalSignagePoints   *wrappedPrometheus.LazyCounter
 	signagePointsSubSlot *wrappedPrometheus.LazyGauge
-	currentSignagePoint *wrappedPrometheus.LazyGauge
+	currentSignagePoint  *wrappedPrometheus.LazyGauge
 }
 
 // InitMetrics sets all the metrics properties
