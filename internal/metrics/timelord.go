@@ -43,8 +43,8 @@ func (s *TimelordServiceMetrics) InitialData() {
 func (s *TimelordServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	//("finished_pot_challenge", "new_compact_proof", "skipping_peak", "new_peak")
 	switch resp.Command {
-	case "finished_pot_challenge":
-		s.FinishedPoTChallenge(resp)
+	case "finished_pot":
+		s.FinishedPoT(resp)
 	case "new_compact_proof":
 		s.NewCompactProof(resp)
 	case "skipping_peak":
@@ -54,15 +54,15 @@ func (s *TimelordServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) 
 	}
 }
 
-// FinishedPoTChallenge Handles new PoT Challenge Events
-func (s *TimelordServiceMetrics) FinishedPoTChallenge(resp *types.WebsocketResponse) {
-	potevent := &types.FinishedPoTChallengeEvent{}
-	err := json.Unmarshal(resp.Data, potevent)
+// FinishedPoT Handles new PoT Challenge Events
+func (s *TimelordServiceMetrics) FinishedPoT(resp *types.WebsocketResponse) {
+	potEvent := &types.FinishedPoTEvent{}
+	err := json.Unmarshal(resp.Data, potEvent)
 	if err != nil {
 		log.Printf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
-	s.estimatedIPS.Set(potevent.EstimatedIPS)
+	s.estimatedIPS.Set(potEvent.EstimatedIPS)
 }
 
 // NewCompactProof Handles new compact proof events

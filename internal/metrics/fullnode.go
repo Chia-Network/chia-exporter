@@ -222,6 +222,6 @@ func (s *FullNodeServiceMetrics) SignagePoint(resp *types.WebsocketResponse) {
 
 	// total signage current
 	s.totalSignagePoints.Inc()
-	s.signagePointsSubSlot.Set(float64(signagePoint.SPsSubSlot))
-	s.currentSignagePoint.Set(float64(signagePoint.SPIndex))
+	s.signagePointsSubSlot.Set(float64(64))
+	s.currentSignagePoint.Set(float64(signagePoint.BroadcastFarmer.SignagePointIndex))
 }
