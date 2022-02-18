@@ -21,13 +21,14 @@ type FullNodeServiceMetrics struct {
 	metrics *Metrics
 
 	// GetBlockchainState Metrics
-	difficulty    *wrappedPrometheus.LazyGauge
-	mempoolCost   *wrappedPrometheus.LazyGauge
-	mempoolMinFee *prometheus.GaugeVec
-	mempoolSize   *wrappedPrometheus.LazyGauge
-	netspaceMiB   *wrappedPrometheus.LazyGauge
-	nodeHeight    *wrappedPrometheus.LazyGauge
-	nodeSynced    *wrappedPrometheus.LazyGauge
+	difficulty          *wrappedPrometheus.LazyGauge
+	mempoolCost         *wrappedPrometheus.LazyGauge
+	mempoolMinFee       *prometheus.GaugeVec
+	mempoolSize         *wrappedPrometheus.LazyGauge
+	mempoolMaxTotalCost *wrappedPrometheus.LazyGauge
+	netspaceMiB         *wrappedPrometheus.LazyGauge
+	nodeHeight          *wrappedPrometheus.LazyGauge
+	nodeSynced          *wrappedPrometheus.LazyGauge
 
 	// BlockCount Metrics
 	compactBlocks   *wrappedPrometheus.LazyGauge
@@ -42,6 +43,11 @@ type FullNodeServiceMetrics struct {
 	blockCost    *wrappedPrometheus.LazyGauge
 	blockFees    *wrappedPrometheus.LazyGauge
 	kSize        *prometheus.CounterVec
+
+	// Signage Point Metrics
+	totalSignagePoints   *wrappedPrometheus.LazyCounter
+	signagePointsSubSlot *wrappedPrometheus.LazyGauge
+	currentSignagePoint  *wrappedPrometheus.LazyGauge
 }
 
 // InitMetrics sets all the metrics properties
@@ -51,6 +57,7 @@ func (s *FullNodeServiceMetrics) InitMetrics() {
 	s.mempoolCost = s.metrics.newGauge(chiaServiceFullNode, "mempool_cost", "")
 	s.mempoolMinFee = s.metrics.newGaugeVec(chiaServiceFullNode, "mempool_min_fee", "", []string{"cost"})
 	s.mempoolSize = s.metrics.newGauge(chiaServiceFullNode, "mempool_size", "")
+	s.mempoolMaxTotalCost = s.metrics.newGauge(chiaServiceFullNode, "mempool_max_total_cost", "")
 	s.netspaceMiB = s.metrics.newGauge(chiaServiceFullNode, "netspace_mib", "")
 	s.nodeHeight = s.metrics.newGauge(chiaServiceFullNode, "node_height", "")
 	s.nodeSynced = s.metrics.newGauge(chiaServiceFullNode, "node_synced", "")
@@ -68,6 +75,10 @@ func (s *FullNodeServiceMetrics) InitMetrics() {
 	s.blockCost = s.metrics.newGauge(chiaServiceFullNode, "block_cost", "")
 	s.blockFees = s.metrics.newGauge(chiaServiceFullNode, "block_fees", "")
 	s.kSize = s.metrics.newCounterVec(chiaServiceFullNode, "k_size", "", []string{"size"})
+
+	s.totalSignagePoints = s.metrics.newCounter(chiaServiceFullNode, "total_signage_points", "Total number of signage points since the metrics exporter started. Only useful when combined with rate() or similar")
+	s.signagePointsSubSlot = s.metrics.newGauge(chiaServiceFullNode, "signage_points_sub_slot", "Number of signage points per sub slot")
+	s.currentSignagePoint = s.metrics.newGauge(chiaServiceFullNode, "current_signage_point", "Index of the last signage point received")
 }
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with
@@ -93,6 +104,8 @@ func (s *FullNodeServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) 
 		s.GetConnections(resp)
 	case "get_block_count_metrics":
 		s.GetBlockCountMetrics(resp)
+	case "signage_point":
+		s.SignagePoint(resp)
 	}
 }
 
@@ -120,6 +133,7 @@ func (s *FullNodeServiceMetrics) GetBlockchainState(resp *types.WebsocketRespons
 	s.difficulty.Set(float64(state.BlockchainState.Difficulty))
 	s.mempoolSize.Set(float64(state.BlockchainState.MempoolSize))
 	s.mempoolCost.Set(float64(state.BlockchainState.MempoolCost))
+	s.mempoolMaxTotalCost.Set(float64(state.BlockchainState.MempoolMaxTotalCost))
 	s.mempoolMinFee.WithLabelValues("5000000").Set(float64(state.BlockchainState.MempoolMinFees.Cost5m))
 	s.maxBlockCost.Set(float64(state.BlockchainState.BlockMaxCost))
 }
@@ -195,4 +209,19 @@ func (s *FullNodeServiceMetrics) GetBlockCountMetrics(resp *types.WebsocketRespo
 	s.compactBlocks.Set(float64(blockMetrics.Metrics.CompactBlocks))
 	s.uncompactBlocks.Set(float64(blockMetrics.Metrics.UncompactBlocks))
 	s.hintCount.Set(float64(blockMetrics.Metrics.HintCount))
+}
+
+// SignagePoint handles signage point metrics
+func (s *FullNodeServiceMetrics) SignagePoint(resp *types.WebsocketResponse) {
+	signagePoint := &types.SignagePointEvent{}
+	err := json.Unmarshal(resp.Data, signagePoint)
+	if err != nil {
+		log.Printf("Error unmarshalling: %s\n", err.Error())
+		return
+	}
+
+	// total signage current
+	s.totalSignagePoints.Inc()
+	s.signagePointsSubSlot.Set(float64(64))
+	s.currentSignagePoint.Set(float64(signagePoint.BroadcastFarmer.SignagePointIndex))
 }
