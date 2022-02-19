@@ -44,8 +44,8 @@ func (s *CrawlerServiceMetrics) InitMetrics() {
 	s.reliableNodes = s.metrics.newGauge(chiaServiceCrawler, "reliable_nodes", "reliable nodes are nodes that have port 8444 open and have available space for more peer connections")
 	s.ipv4Nodes5Days = s.metrics.newGauge(chiaServiceCrawler, "ipv4_nodes_5_days", "Total number of IPv4 nodes that have been gossiped around the network with a timestamp in the last 5 days. The crawler did not necessarily connect to all of these peers itself.")
 	s.ipv6Nodes5Days = s.metrics.newGauge(chiaServiceCrawler, "ipv6_nodes_5_days", "Total number of IPv6 nodes that have been gossiped around the network with a timestamp in the last 5 days. The crawler did not necessarily connect to all of these peers itself.")
-	s.versionBuckets = s.metrics.newGaugeVec(chiaServiceCrawler, "version_bucket", "Number of peers for each version. Only peers the crawler was able to connect to are included here.", []string{"version"})
-	s.countryNodeCountBuckets = s.metrics.newGaugeVec(chiaServiceCrawler, "country_node_count_bucket", "Number of peers gossiped in the last 5 days from each country.", []string{"country", "country_display"})
+	s.versionBuckets = s.metrics.newGaugeVec(chiaServiceCrawler, "peer_version", "Number of peers for each version. Only peers the crawler was able to connect to are included here.", []string{"version"})
+	s.countryNodeCountBuckets = s.metrics.newGaugeVec(chiaServiceCrawler, "country_node_count", "Number of peers gossiped in the last 5 days from each country.", []string{"country", "country_display"})
 
 	err := s.initMaxmindDB()
 	if err != nil {
