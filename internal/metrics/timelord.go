@@ -75,7 +75,7 @@ func (s *TimelordServiceMetrics) NewCompactProof(resp *types.WebsocketResponse) 
 	}
 
 	var field string
-	switch compactProof.FieldVdf{
+	switch compactProof.FieldVdf {
 	case types.CompressibleVDFFieldCCEOSVDF:
 		field = "CC_EOS_VDF"
 	case types.CompressibleVDFFieldICCEOSVDF:

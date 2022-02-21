@@ -53,28 +53,28 @@ type FullNodeServiceMetrics struct {
 // InitMetrics sets all the metrics properties
 func (s *FullNodeServiceMetrics) InitMetrics() {
 	// BlockchainState Metrics
-	s.difficulty = s.metrics.newGauge(chiaServiceFullNode, "difficulty", "")
-	s.mempoolCost = s.metrics.newGauge(chiaServiceFullNode, "mempool_cost", "")
-	s.mempoolMinFee = s.metrics.newGaugeVec(chiaServiceFullNode, "mempool_min_fee", "", []string{"cost"})
-	s.mempoolSize = s.metrics.newGauge(chiaServiceFullNode, "mempool_size", "")
-	s.mempoolMaxTotalCost = s.metrics.newGauge(chiaServiceFullNode, "mempool_max_total_cost", "")
-	s.netspaceMiB = s.metrics.newGauge(chiaServiceFullNode, "netspace_mib", "")
-	s.nodeHeight = s.metrics.newGauge(chiaServiceFullNode, "node_height", "")
-	s.nodeSynced = s.metrics.newGauge(chiaServiceFullNode, "node_synced", "")
+	s.difficulty = s.metrics.newGauge(chiaServiceFullNode, "difficulty", "Current network difficulty")
+	s.mempoolCost = s.metrics.newGauge(chiaServiceFullNode, "mempool_cost", "Current mempool size in cost")
+	s.mempoolMinFee = s.metrics.newGaugeVec(chiaServiceFullNode, "mempool_min_fee", "Minimum fee to get into the mempool, in fee per cost, for a particular transaction cost", []string{"cost"})
+	s.mempoolSize = s.metrics.newGauge(chiaServiceFullNode, "mempool_size", "Number of spends in the mempool")
+	s.mempoolMaxTotalCost = s.metrics.newGauge(chiaServiceFullNode, "mempool_max_total_cost", "The maximum capacity of the mempool, in cost")
+	s.netspaceMiB = s.metrics.newGauge(chiaServiceFullNode, "netspace_mib", "Current estimated netspace, in MiB")
+	s.nodeHeight = s.metrics.newGauge(chiaServiceFullNode, "node_height", "Current height of the node")
+	s.nodeSynced = s.metrics.newGauge(chiaServiceFullNode, "node_synced", "Indicates whether this node is currently synced")
 
 	// BlockCount Metrics
-	s.compactBlocks = s.metrics.newGauge(chiaServiceFullNode, "compact_blocks", "")
-	s.uncompactBlocks = s.metrics.newGauge(chiaServiceFullNode, "uncompact_blocks", "")
-	s.hintCount = s.metrics.newGauge(chiaServiceFullNode, "hint_count", "")
+	s.compactBlocks = s.metrics.newGauge(chiaServiceFullNode, "compact_blocks", "Number of fully compact blocks in this node's database")
+	s.uncompactBlocks = s.metrics.newGauge(chiaServiceFullNode, "uncompact_blocks", "Number of uncompact blocks in this node's database")
+	s.hintCount = s.metrics.newGauge(chiaServiceFullNode, "hint_count", "Number of hints in this nodes database")
 
 	// Connection Metrics
-	s.connectionCount = s.metrics.newGaugeVec(chiaServiceFullNode, "connection_count", "", []string{"node_type"})
+	s.connectionCount = s.metrics.newGaugeVec(chiaServiceFullNode, "connection_count", "Number of active connections for each type of peer", []string{"node_type"})
 
 	// Unfinished Block Metrics
-	s.maxBlockCost = s.metrics.newGauge(chiaServiceFullNode, "block_max_cost", "")
-	s.blockCost = s.metrics.newGauge(chiaServiceFullNode, "block_cost", "")
-	s.blockFees = s.metrics.newGauge(chiaServiceFullNode, "block_fees", "")
-	s.kSize = s.metrics.newCounterVec(chiaServiceFullNode, "k_size", "", []string{"size"})
+	s.maxBlockCost = s.metrics.newGauge(chiaServiceFullNode, "block_max_cost", "Max block size, in cost")
+	s.blockCost = s.metrics.newGauge(chiaServiceFullNode, "block_cost", "Total cost of all transactions in the last block")
+	s.blockFees = s.metrics.newGauge(chiaServiceFullNode, "block_fees", "Total fees in the last block")
+	s.kSize = s.metrics.newCounterVec(chiaServiceFullNode, "k_size", "Counts of winning plot size since the exporter was last started", []string{"size"})
 
 	s.totalSignagePoints = s.metrics.newCounter(chiaServiceFullNode, "total_signage_points", "Total number of signage points since the metrics exporter started. Only useful when combined with rate() or similar")
 	s.signagePointsSubSlot = s.metrics.newGauge(chiaServiceFullNode, "signage_points_sub_slot", "Number of signage points per sub slot")
