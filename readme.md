@@ -12,7 +12,7 @@ First, install [chia-blockchain](https://github.com/Chia-Network/chia-blockchain
 
 ### Configuration
 
-Configuration options can be passed using command line flags, environment variables, or a configuration file, exception for `--config`, which is a CLI flag only. For a complete listing of options, run `chia-exporter --help`.
+Configuration options can be passed using command line flags, environment variables, or a configuration file, except for `--config`, which is a CLI flag only. For a complete listing of options, run `chia-exporter --help`.
 
 To set a config value as an environment variable, prefix the name with `CHIA_EXPORTER_`, convert all letters to uppercase, and replace any dashes with underscores (`metrics-port` becomes `CHIA_EXPORTER_METRICS_PORT`).
 
