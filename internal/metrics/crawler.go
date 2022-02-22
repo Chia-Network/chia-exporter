@@ -10,6 +10,7 @@ import (
 	"github.com/cmmarslender/go-chia-rpc/pkg/rpc"
 	"github.com/cmmarslender/go-chia-rpc/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/spf13/viper"
 
 	"github.com/oschwald/maxminddb-golang"
 
@@ -25,7 +26,6 @@ type CrawlerServiceMetrics struct {
 	metrics *Metrics
 
 	// Interfaces with Maxmind
-	// @TODO should enable a param for the path to this DB
 	maxMindDB *maxminddb.Reader
 
 	// Crawler Metrics
@@ -58,7 +58,11 @@ func (s *CrawlerServiceMetrics) InitMetrics() {
 // If the DB is not present, ip/country mapping is skipped
 func (s *CrawlerServiceMetrics) initMaxmindDB() error {
 	var err error
-	s.maxMindDB, err = maxminddb.Open("GeoLite2-Country.mmdb")
+	dbPath := viper.GetString("maxmind-db-path")
+	if dbPath == "" {
+		return nil
+	}
+	s.maxMindDB, err = maxminddb.Open(dbPath)
 	if err != nil {
 		return err
 	}
