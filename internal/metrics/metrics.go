@@ -5,8 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/cmmarslender/go-chia-rpc/pkg/rpc"
-	"github.com/cmmarslender/go-chia-rpc/pkg/types"
+	"github.com/chia-network/go-chia-libs/pkg/rpc"
+	"github.com/chia-network/go-chia-libs/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
