@@ -3,7 +3,7 @@ module github.com/chia-network/chia-exporter
 go 1.17
 
 require (
-	github.com/cmmarslender/go-chia-rpc v0.0.0-20220219195739-73d5e99a7aed
+	github.com/chia-network/go-chia-libs v0.0.0-20220224223840-95ebad4fbd6e
 	github.com/oschwald/maxminddb-golang v1.8.0
 	github.com/prometheus/client_golang v1.12.0
 	github.com/spf13/cobra v1.3.0
@@ -13,11 +13,10 @@ require (
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/cmmarslender/go-chia-lib v0.0.0-20220207202633-f48534e2f091 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect

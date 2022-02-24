@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"log"
 
-	"github.com/cmmarslender/go-chia-rpc/pkg/types"
+	"github.com/chia-network/go-chia-libs/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
 
 	wrappedPrometheus "github.com/chia-network/chia-exporter/internal/prometheus"
