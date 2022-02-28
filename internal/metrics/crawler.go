@@ -70,11 +70,8 @@ func (s *CrawlerServiceMetrics) initMaxmindDB() error {
 	return nil
 }
 
-// InitialData is called on startup of the metrics server, to allow seeding metrics with
-// current/initial data
-func (s *CrawlerServiceMetrics) InitialData() {
-	utils.LogErr(s.metrics.client.CrawlerService.GetPeerCounts())
-}
+// InitialData is called on startup of the metrics server, to allow seeding metrics with current/initial data
+func (s *CrawlerServiceMetrics) InitialData() {}
 
 // ReceiveResponse handles crawler responses that are returned over the websocket
 func (s *CrawlerServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
