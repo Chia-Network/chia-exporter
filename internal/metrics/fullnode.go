@@ -133,7 +133,10 @@ func (s *FullNodeServiceMetrics) GetBlockchainState(resp *types.WebsocketRespons
 		s.nodeSynced.Set(0)
 	}
 
-	s.nodeHeight.Set(float64(state.BlockchainState.Peak.Height))
+	if state.BlockchainState.Peak != nil {
+		s.nodeHeight.Set(float64(state.BlockchainState.Peak.Height))
+	}
+
 	space := state.BlockchainState.Space
 	MiB := space.Div64(1048576)
 	if MiB.FitsInUint64() {
@@ -143,7 +146,9 @@ func (s *FullNodeServiceMetrics) GetBlockchainState(resp *types.WebsocketRespons
 	s.mempoolSize.Set(float64(state.BlockchainState.MempoolSize))
 	s.mempoolCost.Set(float64(state.BlockchainState.MempoolCost))
 	s.mempoolMaxTotalCost.Set(float64(state.BlockchainState.MempoolMaxTotalCost))
-	s.mempoolMinFee.WithLabelValues("5000000").Set(float64(state.BlockchainState.MempoolMinFees.Cost5m))
+	if state.BlockchainState.MempoolMinFees != nil {
+		s.mempoolMinFee.WithLabelValues("5000000").Set(float64(state.BlockchainState.MempoolMinFees.Cost5m))
+	}
 	s.maxBlockCost.Set(float64(state.BlockchainState.BlockMaxCost))
 }
 
