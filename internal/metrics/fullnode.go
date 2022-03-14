@@ -129,10 +129,12 @@ func (s *FullNodeServiceMetrics) GetBlockchainState(resp *types.WebsocketRespons
 		return
 	}
 
-	if state.BlockchainState.Sync.Synced == true {
-		s.nodeSynced.Set(1)
-	} else {
-		s.nodeSynced.Set(0)
+	if state.BlockchainState.Sync != nil {
+		if state.BlockchainState.Sync.Synced == true {
+			s.nodeSynced.Set(1)
+		} else {
+			s.nodeSynced.Set(0)
+		}
 	}
 
 	if state.BlockchainState.Peak != nil {
@@ -176,19 +178,21 @@ func (s *FullNodeServiceMetrics) GetConnections(resp *types.WebsocketResponse) {
 	wallet := 0.0
 
 	for _, connection := range connections.Connections {
-		switch connection.Type {
-		case types.NodeTypeFullNode:
-			fullNode++
-		case types.NodeTypeHarvester:
-			harvester++
-		case types.NodeTypeFarmer:
-			farmer++
-		case types.NodeTypeTimelord:
-			timelord++
-		case types.NodeTypeIntroducer:
-			introducer++
-		case types.NodeTypeWallet:
-			wallet++
+		if connection != nil {
+			switch connection.Type {
+			case types.NodeTypeFullNode:
+				fullNode++
+			case types.NodeTypeHarvester:
+				harvester++
+			case types.NodeTypeFarmer:
+				farmer++
+			case types.NodeTypeTimelord:
+				timelord++
+			case types.NodeTypeIntroducer:
+				introducer++
+			case types.NodeTypeWallet:
+				wallet++
+			}
 		}
 	}
 
@@ -227,9 +231,11 @@ func (s *FullNodeServiceMetrics) GetBlockCountMetrics(resp *types.WebsocketRespo
 		return
 	}
 
-	s.compactBlocks.Set(float64(blockMetrics.Metrics.CompactBlocks))
-	s.uncompactBlocks.Set(float64(blockMetrics.Metrics.UncompactBlocks))
-	s.hintCount.Set(float64(blockMetrics.Metrics.HintCount))
+	if blockMetrics.Metrics != nil {
+		s.compactBlocks.Set(float64(blockMetrics.Metrics.CompactBlocks))
+		s.uncompactBlocks.Set(float64(blockMetrics.Metrics.UncompactBlocks))
+		s.hintCount.Set(float64(blockMetrics.Metrics.HintCount))
+	}
 }
 
 // SignagePoint handles signage point metrics

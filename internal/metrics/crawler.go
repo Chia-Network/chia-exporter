@@ -96,16 +96,18 @@ func (s *CrawlerServiceMetrics) GetPeerCounts(resp *types.WebsocketResponse) {
 		return
 	}
 
-	s.totalNodes5Days.Set(float64(counts.PeerCounts.TotalLast5Days))
-	s.reliableNodes.Set(float64(counts.PeerCounts.ReliableNodes))
-	s.ipv4Nodes5Days.Set(float64(counts.PeerCounts.IPV4Last5Days))
-	s.ipv6Nodes5Days.Set(float64(counts.PeerCounts.IPV6Last5Days))
+	if counts.PeerCounts != nil {
+		s.totalNodes5Days.Set(float64(counts.PeerCounts.TotalLast5Days))
+		s.reliableNodes.Set(float64(counts.PeerCounts.ReliableNodes))
+		s.ipv4Nodes5Days.Set(float64(counts.PeerCounts.IPV4Last5Days))
+		s.ipv6Nodes5Days.Set(float64(counts.PeerCounts.IPV6Last5Days))
 
-	for version, count := range counts.PeerCounts.Versions {
-		s.versionBuckets.WithLabelValues(version).Set(float64(count))
+		for version, count := range counts.PeerCounts.Versions {
+			s.versionBuckets.WithLabelValues(version).Set(float64(count))
+		}
+
+		s.StartIPCountryMapping(counts.PeerCounts.TotalLast5Days)
 	}
-
-	s.StartIPCountryMapping(counts.PeerCounts.TotalLast5Days)
 }
 
 // StartIPCountryMapping starts the process to fetch current IPs from the crawler
