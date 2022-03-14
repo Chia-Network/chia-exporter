@@ -29,6 +29,7 @@ type FullNodeServiceMetrics struct {
 	mempoolMaxTotalCost *wrappedPrometheus.LazyGauge
 	netspaceMiB         *wrappedPrometheus.LazyGauge
 	nodeHeight          *wrappedPrometheus.LazyGauge
+	nodeHeightSynced    *wrappedPrometheus.LazyGauge
 	nodeSynced          *wrappedPrometheus.LazyGauge
 
 	// BlockCount Metrics
@@ -61,6 +62,7 @@ func (s *FullNodeServiceMetrics) InitMetrics() {
 	s.mempoolMaxTotalCost = s.metrics.newGauge(chiaServiceFullNode, "mempool_max_total_cost", "The maximum capacity of the mempool, in cost")
 	s.netspaceMiB = s.metrics.newGauge(chiaServiceFullNode, "netspace_mib", "Current estimated netspace, in MiB")
 	s.nodeHeight = s.metrics.newGauge(chiaServiceFullNode, "node_height", "Current height of the node")
+	s.nodeHeightSynced = s.metrics.newGauge(chiaServiceFullNode, "node_height_synced", "Current height of the node, when synced. This will register/unregister automatically depending on sync state, and should help make rate() more sane, when you don't want rate of syncing, only rate of the chain.")
 	s.nodeSynced = s.metrics.newGauge(chiaServiceFullNode, "node_synced", "Indicates whether this node is currently synced")
 
 	// BlockCount Metrics
@@ -135,6 +137,11 @@ func (s *FullNodeServiceMetrics) GetBlockchainState(resp *types.WebsocketRespons
 
 	if state.BlockchainState.Peak != nil {
 		s.nodeHeight.Set(float64(state.BlockchainState.Peak.Height))
+		if state.BlockchainState.Sync.Synced {
+			s.nodeHeightSynced.Set(float64(state.BlockchainState.Peak.Height))
+		} else {
+			s.nodeHeightSynced.Unregister()
+		}
 	}
 
 	space := state.BlockchainState.Space
