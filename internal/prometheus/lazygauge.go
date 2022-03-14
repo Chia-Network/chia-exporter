@@ -23,3 +23,11 @@ func (l *LazyGauge) Set(val float64) {
 
 	l.Gauge.Set(val)
 }
+
+// Unregister removes the metric from the Registry to stop reporting it until it is registered again
+func (l *LazyGauge) Unregister() {
+	if l.registered == true {
+		l.registered = false
+		l.Registry.Unregister(l.Gauge)
+	}
+}
