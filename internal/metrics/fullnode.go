@@ -92,6 +92,7 @@ func (s *FullNodeServiceMetrics) InitialData() {
 	s.RequestBlockCountMetrics()
 }
 
+// Disconnected clears/unregisters metrics when the connection drops
 func (s *FullNodeServiceMetrics) Disconnected() {
 	s.difficulty.Unregister()
 	s.mempoolCost.Unregister()
@@ -111,7 +112,7 @@ func (s *FullNodeServiceMetrics) Disconnected() {
 
 	s.maxBlockCost.Unregister()
 	s.blockCost.Unregister()
-	s.blockCost.Unregister()
+	s.blockFees.Unregister()
 	s.kSize.Reset()
 
 	s.totalSignagePoints.Unregister()

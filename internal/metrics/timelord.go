@@ -39,6 +39,7 @@ func (s *TimelordServiceMetrics) InitialData() {
 	utils.LogErr(s.metrics.client.CrawlerService.GetPeerCounts())
 }
 
+// Disconnected clears/unregisters metrics when the connection drops
 func (s *TimelordServiceMetrics) Disconnected() {
 	s.fastestTimelord.Unregister()
 	s.slowTimelord.Unregister()

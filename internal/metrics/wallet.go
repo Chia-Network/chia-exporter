@@ -52,6 +52,7 @@ func (s *WalletServiceMetrics) InitialData() {
 	utils.LogErr(s.metrics.client.WalletService.GetSyncStatus())
 }
 
+// Disconnected clears/unregisters metrics when the connection drops
 func (s *WalletServiceMetrics) Disconnected() {
 	s.walletSynced.Unregister()
 	s.confirmedBalance.Reset()

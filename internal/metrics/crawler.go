@@ -73,6 +73,7 @@ func (s *CrawlerServiceMetrics) initMaxmindDB() error {
 // InitialData is called on startup of the metrics server, to allow seeding metrics with current/initial data
 func (s *CrawlerServiceMetrics) InitialData() {}
 
+// Disconnected clears/unregisters metrics when the connection drops
 func (s *CrawlerServiceMetrics) Disconnected() {
 	s.totalNodes5Days.Unregister()
 	s.reliableNodes.Unregister()
