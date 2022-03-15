@@ -23,7 +23,6 @@ type WalletServiceMetrics struct {
 	// WalletBalanceMetrics
 	walletSynced            *wrappedPrometheus.LazyGauge
 	confirmedBalance        *prometheus.GaugeVec
-	pendingBalance          *prometheus.GaugeVec
 	spendableBalance        *prometheus.GaugeVec
 	maxSendAmount           *prometheus.GaugeVec
 	pendingCoinRemovalCount *prometheus.GaugeVec
@@ -51,6 +50,16 @@ func (s *WalletServiceMetrics) InitialData() {
 	// Otherwise some other consistent identifier would be very useful for historical metrics across different nodes
 	utils.LogErr(s.metrics.client.WalletService.GetWalletBalance(&rpc.GetWalletBalanceOptions{WalletID: 1}))
 	utils.LogErr(s.metrics.client.WalletService.GetSyncStatus())
+}
+
+// Disconnected clears/unregisters metrics when the connection drops
+func (s *WalletServiceMetrics) Disconnected() {
+	s.walletSynced.Unregister()
+	s.confirmedBalance.Reset()
+	s.spendableBalance.Reset()
+	s.maxSendAmount.Reset()
+	s.pendingCoinRemovalCount.Reset()
+	s.unspentCoinCount.Reset()
 }
 
 // ReceiveResponse handles wallet responses that are returned over the websocket

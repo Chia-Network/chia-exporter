@@ -92,6 +92,34 @@ func (s *FullNodeServiceMetrics) InitialData() {
 	s.RequestBlockCountMetrics()
 }
 
+// Disconnected clears/unregisters metrics when the connection drops
+func (s *FullNodeServiceMetrics) Disconnected() {
+	s.difficulty.Unregister()
+	s.mempoolCost.Unregister()
+	s.mempoolMinFee.Reset()
+	s.mempoolSize.Unregister()
+	s.mempoolMaxTotalCost.Unregister()
+	s.netspaceMiB.Unregister()
+	s.nodeHeight.Unregister()
+	s.nodeHeightSynced.Unregister()
+	s.nodeSynced.Unregister()
+
+	s.compactBlocks.Unregister()
+	s.uncompactBlocks.Unregister()
+	s.hintCount.Unregister()
+
+	s.connectionCount.Reset()
+
+	s.maxBlockCost.Unregister()
+	s.blockCost.Unregister()
+	s.blockFees.Unregister()
+	s.kSize.Reset()
+
+	s.totalSignagePoints.Unregister()
+	s.signagePointsSubSlot.Unregister()
+	s.currentSignagePoint.Unregister()
+}
+
 // ReceiveResponse handles full node related responses that are returned over the websocket
 func (s *FullNodeServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	switch resp.Command {

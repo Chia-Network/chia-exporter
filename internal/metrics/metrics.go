@@ -33,6 +33,9 @@ type serviceMetrics interface {
 
 	// ReceiveResponse is called when a response is received for the particular metrics service
 	ReceiveResponse(*types.WebsocketResponse)
+
+	// Disconnected is called when the websocket is disconnected, to clear metrics, etc
+	Disconnected()
 }
 
 // Metrics is the main entrypoint
@@ -166,6 +169,8 @@ func (m *Metrics) OpenWebsocket() error {
 		return err
 	}
 
+	m.client.AddDisconnectHandler(m.disconnectHandler)
+
 	for _, service := range m.serviceMetrics {
 		service.InitialData()
 	}
@@ -206,6 +211,12 @@ func (m *Metrics) websocketReceive(resp *types.WebsocketResponse, err error) {
 	}
 
 	log.Printf("recv: %s %s\n", resp.Origin, resp.Command)
+}
+
+func (m *Metrics) disconnectHandler() {
+	for _, service := range m.serviceMetrics {
+		service.Disconnected()
+	}
 }
 
 // Healthcheck endpoint for metrics server
