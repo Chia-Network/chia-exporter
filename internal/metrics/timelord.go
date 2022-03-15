@@ -39,6 +39,13 @@ func (s *TimelordServiceMetrics) InitialData() {
 	utils.LogErr(s.metrics.client.CrawlerService.GetPeerCounts())
 }
 
+func (s *TimelordServiceMetrics) Disconnected() {
+	s.fastestTimelord.Unregister()
+	s.slowTimelord.Unregister()
+	s.estimatedIPS.Unregister()
+	s.compactProofsFound.Reset()
+}
+
 // ReceiveResponse handles crawler responses that are returned over the websocket
 func (s *TimelordServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	//("finished_pot_challenge", "new_compact_proof", "skipping_peak", "new_peak")

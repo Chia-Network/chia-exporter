@@ -33,3 +33,11 @@ func (l *LazyCounter) Add(val float64) {
 
 	l.Counter.Add(val)
 }
+
+// Unregister removes the metric from the Registry to stop reporting it until it is registered again
+func (l *LazyCounter) Unregister() {
+	if l.registered == true {
+		l.registered = false
+		l.Registry.Unregister(l.Counter)
+	}
+}
