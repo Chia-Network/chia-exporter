@@ -8,7 +8,6 @@ import (
 	"github.com/chia-network/go-chia-libs/pkg/rpc"
 	"github.com/chia-network/go-chia-libs/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/spf13/viper"
 
 	wrappedPrometheus "github.com/chia-network/chia-exporter/internal/prometheus"
 	"github.com/chia-network/chia-exporter/internal/utils"
@@ -89,7 +88,7 @@ func (s *FullNodeServiceMetrics) InitMetrics() {
 func (s *FullNodeServiceMetrics) InitialData() {
 	// Ask for some initial data so we dont have to wait as long
 	utils.LogErr(s.metrics.client.FullNodeService.GetBlockchainState()) // Also calls get_connections once we get the response
-	s.RequestBlockCountMetrics()
+	utils.LogErr(s.metrics.client.FullNodeService.GetBlockCountMetrics())
 }
 
 // Disconnected clears/unregisters metrics when the connection drops
@@ -130,21 +129,13 @@ func (s *FullNodeServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) 
 	case "block":
 		s.Block(resp)
 		// Ask for block count metrics when we get a new block
-		s.RequestBlockCountMetrics()
+		utils.LogErr(s.metrics.client.FullNodeService.GetBlockCountMetrics())
 	case "get_connections":
 		s.GetConnections(resp)
 	case "get_block_count_metrics":
 		s.GetBlockCountMetrics(resp)
 	case "signage_point":
 		s.SignagePoint(resp)
-	}
-}
-
-// RequestBlockCountMetrics Asks the full node for block count metrics
-// This call can be expensive, so is optional
-func (s *FullNodeServiceMetrics) RequestBlockCountMetrics() {
-	if viper.GetBool("enable-block-counts") {
-		utils.LogErr(s.metrics.client.FullNodeService.GetBlockCountMetrics())
 	}
 }
 

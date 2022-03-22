@@ -22,14 +22,6 @@ To use a config file, create a new yaml file and place any configuration options
 metrics-port: 9914
 ```
 
-## Optional Metrics
-
-There are a number of metrics that are opt-in due to external dependencies or because of a higher performance requirement to support them.
-
-### Block Count Metrics
-
-Counts of uncompact and compact blocks results in a database query that does a pretty big read from disk, so can be taxing on lower powered systems, and is disabled by default. To enable this metric, pass `--enable-block-counts`
-
-### Country Data
+## Country Data
 
 When running alongside the crawler, the exporter can optionally export metrics indicating how many peers have been discovered in each country, based on IP address. To enable this functionality, you will need to download the MaxMind GeoLite2 Country database and provide the path to the MaxMind database to the exporter application. The path can be provided with a command line flag `--maxmind-db-path /path/to/GeoLite2-Country.mmdb`, an entry in the config yaml file `maxmind-db-path: /path/to/GeoLite2-Country.mmdb`, or an environment variable `CHIA_EXPORTER_MAXMIND_DB_PATH=/path/to/GeoLite2-Country.mmdb`. To gain access to the MaxMind DB, you can [register here](https://www.maxmind.com/en/geolite2/signup).
