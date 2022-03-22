@@ -30,9 +30,6 @@ func init() {
 	var (
 		metricsPort   int
 		maxmindDBPath string
-
-		// Optional Metrics
-		enableBlockCounts bool
 	)
 
 	cobra.OnInitialize(initConfig)
@@ -40,11 +37,9 @@ func init() {
 
 	rootCmd.PersistentFlags().IntVar(&metricsPort, "metrics-port", 9914, "The port the metrics server binds to")
 	rootCmd.PersistentFlags().StringVar(&maxmindDBPath, "maxmind-db-path", "", "Path to the maxmind database file")
-	rootCmd.PersistentFlags().BoolVar(&enableBlockCounts, "enable-block-counts", false, "Enables block count metrics. This tends to increase the reads on the disk, so is optional, and disabled by default.")
 
 	viper.BindPFlag("metrics-port", rootCmd.PersistentFlags().Lookup("metrics-port"))
 	viper.BindPFlag("maxmind-db-path", rootCmd.PersistentFlags().Lookup("maxmind-db-path"))
-	viper.BindPFlag("enable-block-counts", rootCmd.PersistentFlags().Lookup("enable-block-counts"))
 }
 
 // initConfig reads in config file and ENV variables if set.
