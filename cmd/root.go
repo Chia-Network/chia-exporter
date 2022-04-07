@@ -36,10 +36,10 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.chia-exporter.yaml)")
 
 	rootCmd.PersistentFlags().IntVar(&metricsPort, "metrics-port", 9914, "The port the metrics server binds to")
-	rootCmd.PersistentFlags().StringVar(&maxmindDBPath, "maxmind-db-path", "", "Path to the maxmind database file")
+	rootCmd.PersistentFlags().StringVar(&maxmindDBPath, "maxmind-country-db-path", "", "Path to the maxmind database file")
 
 	viper.BindPFlag("metrics-port", rootCmd.PersistentFlags().Lookup("metrics-port"))
-	viper.BindPFlag("maxmind-db-path", rootCmd.PersistentFlags().Lookup("maxmind-db-path"))
+	viper.BindPFlag("maxmind-country-db-path", rootCmd.PersistentFlags().Lookup("maxmind-country-db-path"))
 }
 
 // initConfig reads in config file and ENV variables if set.
