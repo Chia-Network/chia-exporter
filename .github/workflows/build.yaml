@@ -26,10 +26,10 @@ jobs:
         run: make build
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: chia-exporter-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
-          path: ${{ github.workspace }}/bin/chia-exporter
+          path: ${{ github.workspace }}/bin/chia-exporter*
 
   release:
     runs-on: ubuntu-latest
