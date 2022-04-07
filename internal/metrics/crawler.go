@@ -66,7 +66,7 @@ func (s *CrawlerServiceMetrics) InitMetrics() {
 // If the DB is not present, ip/country mapping is skipped
 func (s *CrawlerServiceMetrics) initMaxmindDB() error {
 	var err error
-	dbPath := viper.GetString("maxmind-db-path")
+	dbPath := viper.GetString("maxmind-country-db-path")
 	if dbPath == "" {
 		return nil
 	}
