@@ -128,6 +128,8 @@ func (s *CrawlerServiceMetrics) StartIPCountryMapping(limit uint) {
 		return
 	}
 
+	log.Println("Requesting IP addresses from the past 5 days for country mapping...")
+
 	utils.LogErr(
 		s.metrics.client.CrawlerService.GetIPsAfterTimestamp(&rpc.GetIPsAfterTimestampOptions{
 			After: time.Now().Add(-5 * time.Hour * 24).Unix(),
