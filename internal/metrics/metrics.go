@@ -43,6 +43,11 @@ type Metrics struct {
 	metricsPort uint16
 	client      *rpc.Client
 
+	// httpClient is another instance of the rpc.Client in HTTP mode
+	// This is used rarely, to request data in response to a websocket event that is too large to fit on a single
+	// websocket connection or needs to be paginated
+	httpClient *rpc.Client
+
 	// This holds a custom prometheus registry so that only our metrics are exported, and not the default go metrics
 	registry *prometheus.Registry
 
@@ -62,6 +67,11 @@ func NewMetrics(port uint16) (*Metrics, error) {
 	}
 
 	metrics.client, err = rpc.NewClient(rpc.ConnectionModeWebsocket)
+	if err != nil {
+		return nil, err
+	}
+
+	metrics.httpClient, err = rpc.NewClient(rpc.ConnectionModeHTTP)
 	if err != nil {
 		return nil, err
 	}
