@@ -199,6 +199,9 @@ func (m *Metrics) websocketReceive(resp *types.WebsocketResponse, err error) {
 		log.Printf("Websocket received err: %s\n", err.Error())
 		return
 	}
+
+	log.Printf("recv: %s %s\n", resp.Origin, resp.Command)
+
 	switch resp.Origin {
 	case "chia_full_node":
 		m.serviceMetrics[chiaServiceFullNode].ReceiveResponse(resp)
@@ -209,8 +212,6 @@ func (m *Metrics) websocketReceive(resp *types.WebsocketResponse, err error) {
 	case "chia_timelord":
 		m.serviceMetrics[chiaServiceTimelord].ReceiveResponse(resp)
 	}
-
-	log.Printf("recv: %s %s\n", resp.Origin, resp.Command)
 }
 
 func (m *Metrics) disconnectHandler() {
