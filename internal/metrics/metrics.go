@@ -46,7 +46,7 @@ type Metrics struct {
 	// httpClient is another instance of the rpc.Client in HTTP mode
 	// This is used rarely, to request data in response to a websocket event that is too large to fit on a single
 	// websocket connection or needs to be paginated
-	httpClient  *rpc.Client
+	httpClient *rpc.Client
 
 	// This holds a custom prometheus registry so that only our metrics are exported, and not the default go metrics
 	registry *prometheus.Registry

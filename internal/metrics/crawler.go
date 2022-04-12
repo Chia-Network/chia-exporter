@@ -15,7 +15,6 @@ import (
 	"github.com/oschwald/maxminddb-golang"
 
 	wrappedPrometheus "github.com/chia-network/chia-exporter/internal/prometheus"
-	"github.com/chia-network/chia-exporter/internal/utils"
 )
 
 // Metrics that are based on Crawler RPC calls are in this file
@@ -92,8 +91,6 @@ func (s *CrawlerServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 		fallthrough
 	case "crawl_batch_completed":
 		s.GetPeerCounts(resp)
-	case "get_ips_after_timestamp":
-		s.GetIPsAfterTimestamp(resp)
 	}
 }
 
@@ -130,25 +127,21 @@ func (s *CrawlerServiceMetrics) StartIPCountryMapping(limit uint) {
 
 	log.Println("Requesting IP addresses from the past 5 days for country mapping...")
 
-	utils.LogErr(
-		s.metrics.client.CrawlerService.GetIPsAfterTimestamp(&rpc.GetIPsAfterTimestampOptions{
-			After: time.Now().Add(-5 * time.Hour * 24).Unix(),
-			Limit: limit,
-		}),
-	)
+	ipsAfterTimestamp, _, err := s.metrics.httpClient.CrawlerService.GetIPsAfterTimestamp(&rpc.GetIPsAfterTimestampOptions{
+		After: time.Now().Add(-5 * time.Hour * 24).Unix(),
+		Limit: limit,
+	})
+	if err != nil {
+		log.Printf("Error getting IPs: %s\n", err.Error())
+	}
+
+	s.GetIPsAfterTimestamp(ipsAfterTimestamp)
 }
 
 // GetIPsAfterTimestamp processes a response of IPs seen since a timestamp
 // Currently assumes all IPs will be in one response
-func (s *CrawlerServiceMetrics) GetIPsAfterTimestamp(resp *types.WebsocketResponse) {
+func (s *CrawlerServiceMetrics) GetIPsAfterTimestamp(ips *rpc.GetIPsAfterTimestampResponse) {
 	if s.maxMindDB == nil {
-		return
-	}
-
-	ips := &rpc.GetIPsAfterTimestampResponse{}
-	err := json.Unmarshal(resp.Data, ips)
-	if err != nil {
-		log.Printf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
 
