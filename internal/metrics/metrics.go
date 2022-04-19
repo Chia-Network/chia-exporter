@@ -73,7 +73,9 @@ func NewMetrics(port uint16) (*Metrics, error) {
 
 	metrics.httpClient, err = rpc.NewClient(rpc.ConnectionModeHTTP)
 	if err != nil {
-		return nil, err
+		// For now, http client is optional
+		// Sometimes this fails with outdated config.yaml files that don't have the crawler/seeder section present
+		log.Printf("Error creating http client: %s\n", err.Error())
 	}
 
 	// Register each service's metrics

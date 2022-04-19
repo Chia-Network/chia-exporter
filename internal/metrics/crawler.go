@@ -125,6 +125,11 @@ func (s *CrawlerServiceMetrics) StartIPCountryMapping(limit uint) {
 		return
 	}
 
+	if s.metrics.httpClient == nil {
+		log.Println("httpClient is nil, skipping IP mapping")
+		return
+	}
+
 	log.Println("Requesting IP addresses from the past 5 days for country mapping...")
 
 	ipsAfterTimestamp, _, err := s.metrics.httpClient.CrawlerService.GetIPsAfterTimestamp(&rpc.GetIPsAfterTimestampOptions{
