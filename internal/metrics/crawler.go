@@ -138,6 +138,7 @@ func (s *CrawlerServiceMetrics) StartIPCountryMapping(limit uint) {
 	})
 	if err != nil {
 		log.Printf("Error getting IPs: %s\n", err.Error())
+		return
 	}
 
 	s.GetIPsAfterTimestamp(ipsAfterTimestamp)
@@ -147,6 +148,10 @@ func (s *CrawlerServiceMetrics) StartIPCountryMapping(limit uint) {
 // Currently assumes all IPs will be in one response
 func (s *CrawlerServiceMetrics) GetIPsAfterTimestamp(ips *rpc.GetIPsAfterTimestampResponse) {
 	if s.maxMindDB == nil {
+		return
+	}
+
+	if ips == nil {
 		return
 	}
 
