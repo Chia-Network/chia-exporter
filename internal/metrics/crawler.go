@@ -151,6 +151,10 @@ func (s *CrawlerServiceMetrics) GetIPsAfterTimestamp(ips *rpc.GetIPsAfterTimesta
 		return
 	}
 
+	if ips == nil {
+		return
+	}
+
 	type countStruct struct {
 		ISOCode string
 		Name    string
