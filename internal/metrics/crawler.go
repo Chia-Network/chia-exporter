@@ -138,6 +138,7 @@ func (s *CrawlerServiceMetrics) StartIPCountryMapping(limit uint) {
 	})
 	if err != nil {
 		log.Printf("Error getting IPs: %s\n", err.Error())
+		return
 	}
 
 	s.GetIPsAfterTimestamp(ipsAfterTimestamp)
