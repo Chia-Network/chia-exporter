@@ -17,10 +17,12 @@ import (
 type chiaService string
 
 const (
-	chiaServiceFullNode chiaService = "full_node"
-	chiaServiceWallet   chiaService = "wallet"
-	chiaServiceCrawler  chiaService = "crawler"
-	chiaServiceTimelord chiaService = "timelord"
+	chiaServiceFullNode  chiaService = "full_node"
+	chiaServiceWallet    chiaService = "wallet"
+	chiaServiceCrawler   chiaService = "crawler"
+	chiaServiceTimelord  chiaService = "timelord"
+	chiaServiceHarvester chiaService = "harvester"
+	chiaServiceFarmer    chiaService = "farmer"
 )
 
 // serviceMetrics defines methods that must be on all metrics services
@@ -87,6 +89,8 @@ func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
 	metrics.serviceMetrics[chiaServiceWallet] = &WalletServiceMetrics{metrics: metrics}
 	metrics.serviceMetrics[chiaServiceCrawler] = &CrawlerServiceMetrics{metrics: metrics}
 	metrics.serviceMetrics[chiaServiceTimelord] = &TimelordServiceMetrics{metrics: metrics}
+	metrics.serviceMetrics[chiaServiceHarvester] = &HarvesterServiceMetrics{metrics: metrics}
+	metrics.serviceMetrics[chiaServiceFarmer] = &FarmerServiceMetrics{metrics: metrics}
 
 	// Init each service's metrics
 	for _, service := range metrics.serviceMetrics {
@@ -227,6 +231,10 @@ func (m *Metrics) websocketReceive(resp *types.WebsocketResponse, err error) {
 		m.serviceMetrics[chiaServiceCrawler].ReceiveResponse(resp)
 	case "chia_timelord":
 		m.serviceMetrics[chiaServiceTimelord].ReceiveResponse(resp)
+	case "chia_harvester":
+		m.serviceMetrics[chiaServiceHarvester].ReceiveResponse(resp)
+	case "chia_farmer":
+		m.serviceMetrics[chiaServiceFarmer].ReceiveResponse(resp)
 	}
 }
 
