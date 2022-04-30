@@ -2,7 +2,8 @@ package metrics
 
 import (
 	"encoding/json"
-	"log"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/chia-network/go-chia-libs/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
@@ -67,7 +68,7 @@ func (s *TimelordServiceMetrics) FinishedPoT(resp *types.WebsocketResponse) {
 	potEvent := &types.FinishedPoTEvent{}
 	err := json.Unmarshal(resp.Data, potEvent)
 	if err != nil {
-		log.Printf("Error unmarshalling: %s\n", err.Error())
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
 	s.estimatedIPS.Set(potEvent.EstimatedIPS)
@@ -78,7 +79,7 @@ func (s *TimelordServiceMetrics) NewCompactProof(resp *types.WebsocketResponse) 
 	compactProof := &types.NewCompactProofEvent{}
 	err := json.Unmarshal(resp.Data, compactProof)
 	if err != nil {
-		log.Printf("Error unmarshalling: %s\n", err.Error())
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
 

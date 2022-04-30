@@ -30,6 +30,7 @@ func init() {
 	var (
 		metricsPort   int
 		maxmindDBPath string
+		logLevel      string
 	)
 
 	cobra.OnInitialize(initConfig)
@@ -37,9 +38,11 @@ func init() {
 
 	rootCmd.PersistentFlags().IntVar(&metricsPort, "metrics-port", 9914, "The port the metrics server binds to")
 	rootCmd.PersistentFlags().StringVar(&maxmindDBPath, "maxmind-db-path", "", "Path to the maxmind database file")
+	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "How verbose the logs should be. panic, fatal, error, warn, info, debug, trace")
 
 	viper.BindPFlag("metrics-port", rootCmd.PersistentFlags().Lookup("metrics-port"))
 	viper.BindPFlag("maxmind-db-path", rootCmd.PersistentFlags().Lookup("maxmind-db-path"))
+	viper.BindPFlag("log-level", rootCmd.PersistentFlags().Lookup("log-level"))
 }
 
 // initConfig reads in config file and ENV variables if set.

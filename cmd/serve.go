@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"log"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -15,7 +16,11 @@ var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Starts the metrics server",
 	Run: func(cmd *cobra.Command, args []string) {
-		m, err := metrics.NewMetrics(uint16(viper.GetInt("metrics-port")))
+		level, err := log.ParseLevel(viper.GetString("log-level"))
+		if err != nil {
+			log.Fatalf("Error parsing log level: %s\n", err.Error())
+		}
+		m, err := metrics.NewMetrics(uint16(viper.GetInt("metrics-port")), level)
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
@@ -29,7 +34,7 @@ var serveCmd = &cobra.Command{
 			log.Println("App is stopping. Cleaning up...")
 			err := m.CloseWebsocket()
 			if err != nil {
-				log.Printf("Error closing websocket connection: %s\n", err.Error())
+				log.Errorf("Error closing websocket connection: %s\n", err.Error())
 			}
 		}(m)
 
@@ -48,7 +53,7 @@ func startWebsocket(m *metrics.Metrics) {
 	for {
 		err := m.OpenWebsocket()
 		if err != nil {
-			log.Println(err.Error())
+			log.Errorln(err.Error())
 			time.Sleep(5 * time.Second)
 			continue
 		}

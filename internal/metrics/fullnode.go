@@ -3,7 +3,8 @@ package metrics
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/chia-network/go-chia-libs/pkg/rpc"
 	"github.com/chia-network/go-chia-libs/pkg/types"
@@ -144,7 +145,7 @@ func (s *FullNodeServiceMetrics) GetBlockchainState(resp *types.WebsocketRespons
 	state := &types.WebsocketBlockchainState{}
 	err := json.Unmarshal(resp.Data, state)
 	if err != nil {
-		log.Printf("Error unmarshalling: %s\n", err.Error())
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
 
@@ -185,7 +186,7 @@ func (s *FullNodeServiceMetrics) GetConnections(resp *types.WebsocketResponse) {
 	connections := &rpc.GetConnectionsResponse{}
 	err := json.Unmarshal(resp.Data, connections)
 	if err != nil {
-		log.Printf("Error unmarshalling: %s\n", err.Error())
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
 
@@ -228,7 +229,7 @@ func (s *FullNodeServiceMetrics) Block(resp *types.WebsocketResponse) {
 	block := &types.BlockEvent{}
 	err := json.Unmarshal(resp.Data, block)
 	if err != nil {
-		log.Printf("Error unmarshalling: %s\n", err.Error())
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
 
@@ -246,7 +247,7 @@ func (s *FullNodeServiceMetrics) GetBlockCountMetrics(resp *types.WebsocketRespo
 	blockMetrics := &rpc.GetBlockCountMetricsResponse{}
 	err := json.Unmarshal(resp.Data, blockMetrics)
 	if err != nil {
-		log.Printf("Error unmarshalling: %s\n", err.Error())
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
 
@@ -262,7 +263,7 @@ func (s *FullNodeServiceMetrics) SignagePoint(resp *types.WebsocketResponse) {
 	signagePoint := &types.SignagePointEvent{}
 	err := json.Unmarshal(resp.Data, signagePoint)
 	if err != nil {
-		log.Printf("Error unmarshalling: %s\n", err.Error())
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
 

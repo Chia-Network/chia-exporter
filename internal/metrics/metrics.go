@@ -2,8 +2,9 @@ package metrics
 
 import (
 	"fmt"
-	"log"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/chia-network/go-chia-libs/pkg/rpc"
 	"github.com/chia-network/go-chia-libs/pkg/types"
@@ -57,7 +58,7 @@ type Metrics struct {
 
 // NewMetrics returns a new instance of metrics
 // All metrics are registered here
-func NewMetrics(port uint16) (*Metrics, error) {
+func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
 	var err error
 
 	metrics := &Metrics{
@@ -65,6 +66,8 @@ func NewMetrics(port uint16) (*Metrics, error) {
 		registry:       prometheus.NewRegistry(),
 		serviceMetrics: map[chiaService]serviceMetrics{},
 	}
+
+	log.SetLevel(logLevel)
 
 	metrics.client, err = rpc.NewClient(rpc.ConnectionModeWebsocket)
 	if err != nil {
@@ -75,7 +78,7 @@ func NewMetrics(port uint16) (*Metrics, error) {
 	if err != nil {
 		// For now, http client is optional
 		// Sometimes this fails with outdated config.yaml files that don't have the crawler/seeder section present
-		log.Printf("Error creating http client: %s\n", err.Error())
+		log.Errorf("Error creating http client: %s\n", err.Error())
 	}
 
 	// Register each service's metrics
@@ -208,11 +211,12 @@ func (m *Metrics) StartServer() error {
 
 func (m *Metrics) websocketReceive(resp *types.WebsocketResponse, err error) {
 	if err != nil {
-		log.Printf("Websocket received err: %s\n", err.Error())
+		log.Errorf("Websocket received err: %s\n", err.Error())
 		return
 	}
 
 	log.Printf("recv: %s %s\n", resp.Origin, resp.Command)
+	log.Debugf("origin: %s command: %s destination: %s data: %s\n", resp.Origin, resp.Command, resp.Destination, string(resp.Data))
 
 	switch resp.Origin {
 	case "chia_full_node":
@@ -237,6 +241,6 @@ func healthcheckEndpoint(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, err := fmt.Fprintf(w, "Ok")
 	if err != nil {
-		log.Printf("Error writing healthcheck response %s\n", err.Error())
+		log.Errorf("Error writing healthcheck response %s\n", err.Error())
 	}
 }
