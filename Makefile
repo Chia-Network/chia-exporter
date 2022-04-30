@@ -38,6 +38,9 @@ $(BIN)/golint: PACKAGE=golang.org/x/lint/golint
 STATICCHECK = $(BIN)/staticcheck
 $(BIN)/staticcheck: PACKAGE=honnef.co/go/tools/cmd/staticcheck
 
+ERRCHECK = $(BIN)/errcheck
+$(BIN)/errcheck: PACKAGE=github.com/kisielk/errcheck
+
 GOCOV = $(BIN)/gocov
 $(BIN)/gocov: PACKAGE=github.com/axw/gocov/...
 
@@ -57,10 +60,10 @@ test-verbose: ARGS=-v            ## Run tests in verbose mode with coverage repo
 test-race:    ARGS=-race         ## Run tests with race detector
 $(TEST_TARGETS): NAME=$(MAKECMDGOALS:test-%=%)
 $(TEST_TARGETS): test
-check test tests: fmt lint vet staticcheck; $(info $(M) running $(NAME:%=% )tests…) @ ## Run tests
+check test tests: fmt lint vet staticcheck errcheck; $(info $(M) running $(NAME:%=% )tests…) @ ## Run tests
 	$Q $(GO) test -timeout $(TIMEOUT)s $(ARGS) $(TESTPKGS)
 
-test-xml: fmt lint vet staticcheck | $(GO2XUNIT) ; $(info $(M) running xUnit tests…) @ ## Run tests with xUnit output
+test-xml: fmt lint vet staticcheck errcheck | $(GO2XUNIT) ; $(info $(M) running xUnit tests…) @ ## Run tests with xUnit output
 	$Q mkdir -p test
 	$Q 2>&1 $(GO) test -timeout $(TIMEOUT)s -v $(TESTPKGS) | tee test/tests.output
 	$(GO2XUNIT) -fail -input test/tests.output -output test/tests.xml
@@ -72,7 +75,7 @@ COVERAGE_HTML    = $(COVERAGE_DIR)/index.html
 .PHONY: test-coverage test-coverage-tools
 test-coverage-tools: | $(GOCOV) $(GOCOVXML)
 test-coverage: COVERAGE_DIR := $(CURDIR)/test/coverage
-test-coverage: fmt lint vet staticcheck test-coverage-tools ; $(info $(M) running coverage tests…) @ ## Run coverage tests
+test-coverage: fmt lint vet staticcheck errcheck test-coverage-tools ; $(info $(M) running coverage tests…) @ ## Run coverage tests
 	$Q mkdir -p $(COVERAGE_DIR)
 	$Q $(GO) test \
 		-coverpkg=$$($(GO) list -f '{{ join .Deps "\n" }}' $(TESTPKGS) | \
@@ -98,6 +101,10 @@ vet: ; $(info $(M) running go vet…) @ ## Run go vet on all source files
 .PHONY: staticcheck
 staticcheck: | $(STATICCHECK) ; $(info $(M) running staticcheck…) @
 	$Q $(STATICCHECK) $(PKGS)
+
+.PHONY: errcheck
+errcheck: | $(ERRCHECK) ; $(info $(M) running errcheck…) @
+	$Q $(ERRCHECK) $(PKGS)
 
 # Misc
 
