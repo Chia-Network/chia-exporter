@@ -16,7 +16,7 @@ type LazyCounter struct {
 
 // Inc wraps prometheus.Counter.Inc with a call to MustRegister
 func (l *LazyCounter) Inc() {
-	if l.registered != true {
+	if !l.registered {
 		l.registered = true
 		l.Registry.MustRegister(l.Counter)
 	}
@@ -26,7 +26,7 @@ func (l *LazyCounter) Inc() {
 
 // Add wraps prometheus.Counter.Add with a call to MustRegister
 func (l *LazyCounter) Add(val float64) {
-	if l.registered != true {
+	if !l.registered {
 		l.registered = true
 		l.Registry.MustRegister(l.Counter)
 	}
@@ -36,7 +36,7 @@ func (l *LazyCounter) Add(val float64) {
 
 // Unregister removes the metric from the Registry to stop reporting it until it is registered again
 func (l *LazyCounter) Unregister() {
-	if l.registered == true {
+	if l.registered {
 		l.registered = false
 		l.Registry.Unregister(l.Counter)
 	}

@@ -170,7 +170,7 @@ func (s *CrawlerServiceMetrics) GetIPsAfterTimestamp(ips *rpc.GetIPsAfterTimesta
 		}
 
 		countryName := ""
-		countryName, _ = country.Country.Names["en"]
+		countryName = country.Country.Names["en"]
 
 		if _, ok := countryCounts[country.Country.ISOCode]; !ok {
 			countryCounts[country.Country.ISOCode] = &countStruct{

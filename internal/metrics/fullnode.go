@@ -150,7 +150,7 @@ func (s *FullNodeServiceMetrics) GetBlockchainState(resp *types.WebsocketRespons
 	}
 
 	if state.BlockchainState.Sync != nil {
-		if state.BlockchainState.Sync.Synced == true {
+		if state.BlockchainState.Sync.Synced {
 			s.nodeSynced.Set(1)
 		} else {
 			s.nodeSynced.Set(0)
@@ -235,7 +235,7 @@ func (s *FullNodeServiceMetrics) Block(resp *types.WebsocketResponse) {
 
 	s.kSize.WithLabelValues(fmt.Sprintf("%d", block.KSize)).Inc()
 
-	if block.TransactionBlock == true {
+	if block.TransactionBlock {
 		s.blockCost.Set(float64(block.BlockCost))
 		s.blockFees.Set(float64(block.BlockFees))
 	}
