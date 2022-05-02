@@ -3,9 +3,10 @@ package metrics
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/chia-network/go-chia-libs/pkg/rpc"
 	"github.com/chia-network/go-chia-libs/pkg/types"
@@ -49,7 +50,7 @@ func (s *CrawlerServiceMetrics) InitMetrics() {
 	err := s.initMaxmindDB()
 	if err != nil {
 		// Continue on maxmind error - optional/not critical functionality
-		log.Printf("Error initializing maxmind DB: %s\n", err.Error())
+		log.Errorf("Error initializing maxmind DB: %s\n", err.Error())
 	}
 }
 
@@ -99,7 +100,7 @@ func (s *CrawlerServiceMetrics) GetPeerCounts(resp *types.WebsocketResponse) {
 	counts := &rpc.GetPeerCountsResponse{}
 	err := json.Unmarshal(resp.Data, counts)
 	if err != nil {
-		log.Printf("Error unmarshalling: %s\n", err.Error())
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
 
@@ -137,7 +138,7 @@ func (s *CrawlerServiceMetrics) StartIPCountryMapping(limit uint) {
 		Limit: limit,
 	})
 	if err != nil {
-		log.Printf("Error getting IPs: %s\n", err.Error())
+		log.Errorf("Error getting IPs: %s\n", err.Error())
 		return
 	}
 
@@ -169,7 +170,7 @@ func (s *CrawlerServiceMetrics) GetIPsAfterTimestamp(ips *rpc.GetIPsAfterTimesta
 		}
 
 		countryName := ""
-		countryName, _ = country.Country.Names["en"]
+		countryName = country.Country.Names["en"]
 
 		if _, ok := countryCounts[country.Country.ISOCode]; !ok {
 			countryCounts[country.Country.ISOCode] = &countStruct{

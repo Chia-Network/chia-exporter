@@ -3,7 +3,8 @@ package metrics
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/chia-network/go-chia-libs/pkg/rpc"
 	"github.com/chia-network/go-chia-libs/pkg/types"
@@ -144,12 +145,12 @@ func (s *FullNodeServiceMetrics) GetBlockchainState(resp *types.WebsocketRespons
 	state := &types.WebsocketBlockchainState{}
 	err := json.Unmarshal(resp.Data, state)
 	if err != nil {
-		log.Printf("Error unmarshalling: %s\n", err.Error())
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
 
 	if state.BlockchainState.Sync != nil {
-		if state.BlockchainState.Sync.Synced == true {
+		if state.BlockchainState.Sync.Synced {
 			s.nodeSynced.Set(1)
 		} else {
 			s.nodeSynced.Set(0)
@@ -185,7 +186,7 @@ func (s *FullNodeServiceMetrics) GetConnections(resp *types.WebsocketResponse) {
 	connections := &rpc.GetConnectionsResponse{}
 	err := json.Unmarshal(resp.Data, connections)
 	if err != nil {
-		log.Printf("Error unmarshalling: %s\n", err.Error())
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
 
@@ -228,13 +229,13 @@ func (s *FullNodeServiceMetrics) Block(resp *types.WebsocketResponse) {
 	block := &types.BlockEvent{}
 	err := json.Unmarshal(resp.Data, block)
 	if err != nil {
-		log.Printf("Error unmarshalling: %s\n", err.Error())
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
 
 	s.kSize.WithLabelValues(fmt.Sprintf("%d", block.KSize)).Inc()
 
-	if block.TransactionBlock == true {
+	if block.TransactionBlock {
 		s.blockCost.Set(float64(block.BlockCost))
 		s.blockFees.Set(float64(block.BlockFees))
 	}
@@ -246,7 +247,7 @@ func (s *FullNodeServiceMetrics) GetBlockCountMetrics(resp *types.WebsocketRespo
 	blockMetrics := &rpc.GetBlockCountMetricsResponse{}
 	err := json.Unmarshal(resp.Data, blockMetrics)
 	if err != nil {
-		log.Printf("Error unmarshalling: %s\n", err.Error())
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
 
@@ -262,7 +263,7 @@ func (s *FullNodeServiceMetrics) SignagePoint(resp *types.WebsocketResponse) {
 	signagePoint := &types.SignagePointEvent{}
 	err := json.Unmarshal(resp.Data, signagePoint)
 	if err != nil {
-		log.Printf("Error unmarshalling: %s\n", err.Error())
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
 

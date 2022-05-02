@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -30,6 +31,7 @@ func init() {
 	var (
 		metricsPort   int
 		maxmindDBPath string
+		logLevel      string
 	)
 
 	cobra.OnInitialize(initConfig)
@@ -37,9 +39,20 @@ func init() {
 
 	rootCmd.PersistentFlags().IntVar(&metricsPort, "metrics-port", 9914, "The port the metrics server binds to")
 	rootCmd.PersistentFlags().StringVar(&maxmindDBPath, "maxmind-db-path", "", "Path to the maxmind database file")
+	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "How verbose the logs should be. panic, fatal, error, warn, info, debug, trace")
 
-	viper.BindPFlag("metrics-port", rootCmd.PersistentFlags().Lookup("metrics-port"))
-	viper.BindPFlag("maxmind-db-path", rootCmd.PersistentFlags().Lookup("maxmind-db-path"))
+	err := viper.BindPFlag("metrics-port", rootCmd.PersistentFlags().Lookup("metrics-port"))
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	err = viper.BindPFlag("maxmind-db-path", rootCmd.PersistentFlags().Lookup("maxmind-db-path"))
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	err = viper.BindPFlag("log-level", rootCmd.PersistentFlags().Lookup("log-level"))
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
 }
 
 // initConfig reads in config file and ENV variables if set.

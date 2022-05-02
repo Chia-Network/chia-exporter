@@ -3,7 +3,8 @@ package metrics
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/chia-network/go-chia-libs/pkg/rpc"
 	"github.com/chia-network/go-chia-libs/pkg/types"
@@ -81,7 +82,7 @@ func (s *WalletServiceMetrics) CoinAdded(resp *types.WebsocketResponse) {
 	coinAdded := &types.CoinAddedEvent{}
 	err := json.Unmarshal(resp.Data, coinAdded)
 	if err != nil {
-		log.Printf("Error unmarshalling: %s\n", err.Error())
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
 
@@ -100,7 +101,7 @@ func (s *WalletServiceMetrics) GetSyncStatus(resp *types.WebsocketResponse) {
 	syncStatusResponse := &rpc.GetWalletSyncStatusResponse{}
 	err := json.Unmarshal(resp.Data, syncStatusResponse)
 	if err != nil {
-		log.Printf("Error unmarshalling: %s\n", err.Error())
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
 
@@ -116,7 +117,7 @@ func (s *WalletServiceMetrics) GetWalletBalance(resp *types.WebsocketResponse) {
 	walletBalance := &rpc.GetWalletBalanceResponse{}
 	err := json.Unmarshal(resp.Data, walletBalance)
 	if err != nil {
-		log.Printf("Error unmarshalling: %s\n", err.Error())
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
 		return
 	}
 
