@@ -6,6 +6,8 @@ import (
 	"github.com/chia-network/go-chia-libs/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
+
+	wrappedPrometheus "github.com/chia-network/chia-exporter/internal/prometheus"
 )
 
 // Metrics that are based on Farmer RPC calls are in this file
@@ -19,6 +21,9 @@ type FarmerServiceMetrics struct {
 	submittedPartials   *prometheus.CounterVec
 	currentDifficulty   *prometheus.GaugeVec
 	pointsAckSinceStart *prometheus.GaugeVec
+
+	// Proof Metrics
+	proofsFound *wrappedPrometheus.LazyCounter
 }
 
 // InitMetrics sets all the metrics properties
@@ -28,6 +33,9 @@ func (s *FarmerServiceMetrics) InitMetrics() {
 	s.submittedPartials = s.metrics.newCounterVec(chiaServiceFarmer, "submitted_partials", "Number of partials submitted since the exporter was started", poolLabels)
 	s.currentDifficulty = s.metrics.newGaugeVec(chiaServiceFarmer, "current_difficulty", "Current difficulty for this launcher id", poolLabels)
 	s.pointsAckSinceStart = s.metrics.newGaugeVec(chiaServiceFarmer, "points_acknowledged_since_start", "Points acknowledged since start. This is calculated by chia, NOT since start of the exporter.", poolLabels)
+
+	// Proof Metrics
+	s.proofsFound = s.metrics.newCounter(chiaServiceFarmer, "proofs_found", "Number of proofs found since the exporter has been running")
 }
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with current/initial data
@@ -42,8 +50,7 @@ func (s *FarmerServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	case "submitted_partial":
 		s.SubmittedPartial(resp)
 	case "proof":
-		log.Printf("%+v", resp)
-		// @TODO
+		s.Proof(resp)
 	}
 }
 
@@ -59,4 +66,16 @@ func (s *FarmerServiceMetrics) SubmittedPartial(resp *types.WebsocketResponse) {
 	s.submittedPartials.WithLabelValues(partial.LauncherID).Inc()
 	s.currentDifficulty.WithLabelValues(partial.LauncherID).Set(float64(partial.CurrentDifficulty))
 	s.pointsAckSinceStart.WithLabelValues(partial.LauncherID).Set(float64(partial.PointsAcknowledgedSinceStart))
+}
+
+// Proof handles a received `proof` event from the farmer
+func (s *FarmerServiceMetrics) Proof(resp *types.WebsocketResponse) {
+	proof := &types.EventFarmerProof{}
+	err := json.Unmarshal(resp.Data, proof)
+	if err != nil {
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
+		return
+	}
+
+	s.proofsFound.Inc()
 }
