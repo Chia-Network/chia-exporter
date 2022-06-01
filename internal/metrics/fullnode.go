@@ -41,10 +41,12 @@ type FullNodeServiceMetrics struct {
 	connectionCount *prometheus.GaugeVec
 
 	// Block Metrics
-	maxBlockCost *wrappedPrometheus.LazyGauge
-	blockCost    *wrappedPrometheus.LazyGauge
-	blockFees    *wrappedPrometheus.LazyGauge
-	kSize        *prometheus.CounterVec
+	maxBlockCost      *wrappedPrometheus.LazyGauge
+	blockCost         *wrappedPrometheus.LazyGauge
+	blockFees         *wrappedPrometheus.LazyGauge
+	kSize             *prometheus.CounterVec
+	preValidationTime *wrappedPrometheus.LazyGauge
+	validationTime    *wrappedPrometheus.LazyGauge
 
 	// Signage Point Metrics
 	totalSignagePoints   *wrappedPrometheus.LazyCounter
@@ -78,6 +80,8 @@ func (s *FullNodeServiceMetrics) InitMetrics() {
 	s.blockCost = s.metrics.newGauge(chiaServiceFullNode, "block_cost", "Total cost of all transactions in the last block")
 	s.blockFees = s.metrics.newGauge(chiaServiceFullNode, "block_fees", "Total fees in the last block")
 	s.kSize = s.metrics.newCounterVec(chiaServiceFullNode, "k_size", "Counts of winning plot size since the exporter was last started", []string{"size"})
+	s.preValidationTime = s.metrics.newGauge(chiaServiceFullNode, "pre_validation_time", "Last pre_validation_time from the block event")
+	s.validationTime = s.metrics.newGauge(chiaServiceFullNode, "validation_time", "Last validation time from the block event")
 
 	s.totalSignagePoints = s.metrics.newCounter(chiaServiceFullNode, "total_signage_points", "Total number of signage points since the metrics exporter started. Only useful when combined with rate() or similar")
 	s.signagePointsSubSlot = s.metrics.newGauge(chiaServiceFullNode, "signage_points_sub_slot", "Number of signage points per sub slot")
@@ -234,6 +238,8 @@ func (s *FullNodeServiceMetrics) Block(resp *types.WebsocketResponse) {
 	}
 
 	s.kSize.WithLabelValues(fmt.Sprintf("%d", block.KSize)).Inc()
+	s.preValidationTime.Set(block.PreValidationTime)
+	s.validationTime.Set(block.ValidationTime)
 
 	if block.TransactionBlock {
 		s.blockCost.Set(float64(block.BlockCost))
