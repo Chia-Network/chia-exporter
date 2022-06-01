@@ -3,7 +3,7 @@ module github.com/chia-network/chia-exporter
 go 1.17
 
 require (
-	github.com/chia-network/go-chia-libs v0.0.5-0.20220601164408-2cca729d21e3
+	github.com/chia-network/go-chia-libs v0.0.5
 	github.com/oschwald/maxminddb-golang v1.8.0
 	github.com/prometheus/client_golang v1.12.0
 	github.com/sirupsen/logrus v1.8.1
