@@ -40,7 +40,7 @@ func (s *HarvesterServiceMetrics) InitMetrics() {
 	s.totalPlots = s.metrics.newGauge(chiaServiceHarvester, "total_plots", "Total number of plots on this harvester")
 	s.totalPoolPlots = s.metrics.newGauge(chiaServiceHarvester, "total_pool_plots", "Total number of pool plots on this harvester")
 	s.totalOGPlots = s.metrics.newGauge(chiaServiceHarvester, "total_og_plots", "Total number of OG plots on this harvester")
-	s.plotFilesize = s.metrics.newGaugeVec(chiaServiceHarvester, "plot_filesize", "Total filesize of plots on this harvester, by K size", []string{"size"})
+	s.plotFilesize = s.metrics.newGaugeVec(chiaServiceHarvester, "plot_filesize", "Total filesize of plots on this harvester, by K size", []string{"size", "type"})
 
 	s.totalFoundProofs = s.metrics.newCounter(chiaServiceHarvester, "total_found_proofs", "Counter of total found proofs since the exporter started")
 	s.lastFoundProofs = s.metrics.newGauge(chiaServiceHarvester, "last_found_proofs", "Number of proofs found for the last farmer_info event")
@@ -53,7 +53,15 @@ func (s *HarvesterServiceMetrics) InitMetrics() {
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with current/initial data
 func (s *HarvesterServiceMetrics) InitialData() {
-	utils.LogErr(s.metrics.client.HarvesterService.GetPlots())
+	s.httpGetPlots()
+}
+
+func (s *HarvesterServiceMetrics) httpGetPlots() {
+	// get_plots seems to sometimes not respond on websockets, so doing http request for this
+	log.Debug("Calling get_plots with http client")
+	plots, _, err := s.metrics.httpClient.HarvesterService.GetPlots()
+	utils.LogErr(plots, nil, err)
+	s.ProcessGetPlots(plots)
 }
 
 // Disconnected clears/unregisters metrics when the connection drops
@@ -88,10 +96,8 @@ func (s *HarvesterServiceMetrics) FarmingInfo(resp *types.WebsocketResponse) {
 	// We actually set the _new_ value of totalPlotsValue in the get_plots handler, to make sure that request was successful
 	if info.TotalPlots != s.totalPlotsValue {
 		// Gets plot info (filesize, etc) when the number of plots changes
-		log.Debug("Calling get_plots")
-		utils.LogErr(s.metrics.client.HarvesterService.GetPlots())
+		s.httpGetPlots()
 	}
-
 
 	s.totalFoundProofs.Add(float64(info.FoundProofs))
 	s.lastFoundProofs.Set(float64(info.FoundProofs))
@@ -111,29 +117,42 @@ func (s *HarvesterServiceMetrics) GetPlots(resp *types.WebsocketResponse) {
 		return
 	}
 
+	s.ProcessGetPlots(plots)
+}
+
+// ProcessGetPlots processes the `GetPlotsResponse` from get_plots so that we can use this with websockets or HTTP RPC requests
+func (s *HarvesterServiceMetrics) ProcessGetPlots(plots *rpc.HarvesterGetPlotsResponse) {
 	// First, iterate through all the plots to get totals for each ksize
-	plotSize := map[uint8]uint64{}
+	type plotType uint8
+	plotTypeOg := plotType(0)
+	plotTypePool := plotType(1)
+
+	plotSize := map[uint8]map[plotType]uint64{}
 	ogPlotCount := 0
 	poolPlotCount := 0
 	for _, plot := range plots.Plots {
 		kSize := plot.Size
 
 		if _, ok := plotSize[kSize]; !ok {
-			plotSize[kSize] = 0
+			plotSize[kSize] = map[plotType]uint64{
+				plotTypeOg:   0,
+				plotTypePool: 0,
+			}
 		}
-
-		plotSize[kSize] += plot.FileSize
 
 		if plot.PoolContractPuzzleHash != "" {
 			poolPlotCount++
+			plotSize[kSize][plotTypePool] += plot.FileSize
 		} else {
 			ogPlotCount++
+			plotSize[kSize][plotTypeOg] += plot.FileSize
 		}
 	}
 
 	// Now we can set the gauges with the calculated total values
-	for kSize, fileSize := range plotSize {
-		s.plotFilesize.WithLabelValues(fmt.Sprintf("%d", kSize)).Set(float64(fileSize))
+	for kSize, fileSizes := range plotSize {
+		s.plotFilesize.WithLabelValues(fmt.Sprintf("%d", kSize), "og").Set(float64(fileSizes[plotTypeOg]))
+		s.plotFilesize.WithLabelValues(fmt.Sprintf("%d", kSize), "pool").Set(float64(fileSizes[plotTypePool]))
 	}
 
 	s.totalPoolPlots.Set(float64(poolPlotCount))
