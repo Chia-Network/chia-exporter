@@ -3,7 +3,10 @@ package metrics
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"time"
 
+	"github.com/chia-network/go-chia-libs/pkg/config"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/chia-network/go-chia-libs/pkg/rpc"
@@ -52,6 +55,14 @@ type FullNodeServiceMetrics struct {
 	totalSignagePoints   *wrappedPrometheus.LazyCounter
 	signagePointsSubSlot *wrappedPrometheus.LazyGauge
 	currentSignagePoint  *wrappedPrometheus.LazyGauge
+
+	// Filesize Metrics
+	database          *wrappedPrometheus.LazyGauge
+	databaseWal       *wrappedPrometheus.LazyGauge
+	databaseShm       *wrappedPrometheus.LazyGauge
+	peersDat          *wrappedPrometheus.LazyGauge
+	heightToHash      *wrappedPrometheus.LazyGauge
+	subEpochSummaries *wrappedPrometheus.LazyGauge
 }
 
 // InitMetrics sets all the metrics properties
@@ -83,9 +94,18 @@ func (s *FullNodeServiceMetrics) InitMetrics() {
 	s.preValidationTime = s.metrics.newGauge(chiaServiceFullNode, "pre_validation_time", "Last pre_validation_time from the block event")
 	s.validationTime = s.metrics.newGauge(chiaServiceFullNode, "validation_time", "Last validation time from the block event")
 
+	// Signage Point Metrics
 	s.totalSignagePoints = s.metrics.newCounter(chiaServiceFullNode, "total_signage_points", "Total number of signage points since the metrics exporter started. Only useful when combined with rate() or similar")
 	s.signagePointsSubSlot = s.metrics.newGauge(chiaServiceFullNode, "signage_points_sub_slot", "Number of signage points per sub slot")
 	s.currentSignagePoint = s.metrics.newGauge(chiaServiceFullNode, "current_signage_point", "Index of the last signage point received")
+
+	// File Size Metrics
+	s.database = s.metrics.newGauge(chiaServiceFullNode, "database_filesize", "Size of the database file")
+	s.databaseWal = s.metrics.newGauge(chiaServiceFullNode, "database_wal_filesize", "Size of the database wal file")
+	s.databaseShm = s.metrics.newGauge(chiaServiceFullNode, "database_shm_filesize", "Size of the database shm file")
+	s.peersDat = s.metrics.newGauge(chiaServiceFullNode, "peers_dat_filesize", "Size of peers.dat file")
+	s.heightToHash = s.metrics.newGauge(chiaServiceFullNode, "height_to_hash_filesize", "Size of height_to_hash file")
+	s.subEpochSummaries = s.metrics.newGauge(chiaServiceFullNode, "sub_epoch_summaries_filesize", "Size of sub_epoch_summaries file")
 }
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with
@@ -94,6 +114,14 @@ func (s *FullNodeServiceMetrics) InitialData() {
 	// Ask for some initial data so we dont have to wait as long
 	utils.LogErr(s.metrics.client.FullNodeService.GetBlockchainState()) // Also calls get_connections once we get the response
 	utils.LogErr(s.metrics.client.FullNodeService.GetBlockCountMetrics())
+
+	// Things that update in the background
+	go func() {
+		for {
+			s.RefreshFileSizes()
+			time.Sleep(30 * time.Second)
+		}
+	}()
 }
 
 // Disconnected clears/unregisters metrics when the connection drops
@@ -277,4 +305,38 @@ func (s *FullNodeServiceMetrics) SignagePoint(resp *types.WebsocketResponse) {
 	s.totalSignagePoints.Inc()
 	s.signagePointsSubSlot.Set(float64(64))
 	s.currentSignagePoint.Set(float64(signagePoint.BroadcastFarmer.SignagePointIndex))
+}
+
+// RefreshFileSizes periodically checks how large files related to the full node are
+func (s *FullNodeServiceMetrics) RefreshFileSizes() {
+	log.Info("cron: chia_full_node updating file sizes")
+	cfg, err := config.GetChiaConfig()
+	if err != nil {
+		log.Errorf("Error getting chia config: %s\n", err.Error())
+	}
+	database := cfg.GetFullPath(cfg.FullNode.DatabasePath)
+	databaseWal := fmt.Sprintf("%s-wal", database)
+	databaseShm := fmt.Sprintf("%s-shm", database)
+	heightToHash := cfg.GetFullPath("db/height-to-hash")
+	peersDat := cfg.GetFullPath("db/peers.dat")
+	subEpochSummaries := cfg.GetFullPath("db/sub-epoch-summaries")
+
+	utils.LogErr(nil, nil, setGaugeToFilesize(database, s.database))
+	utils.LogErr(nil, nil, setGaugeToFilesize(databaseWal, s.databaseWal))
+	utils.LogErr(nil, nil, setGaugeToFilesize(databaseShm, s.databaseShm))
+	utils.LogErr(nil, nil, setGaugeToFilesize(heightToHash, s.heightToHash))
+	utils.LogErr(nil, nil, setGaugeToFilesize(peersDat, s.peersDat))
+	utils.LogErr(nil, nil, setGaugeToFilesize(subEpochSummaries, s.subEpochSummaries))
+}
+
+func setGaugeToFilesize(file string, g *wrappedPrometheus.LazyGauge) error {
+	log.Debugf("Getting filesize of %s\n", file)
+	fi, err := os.Stat(file)
+	if err != nil {
+		return err
+	}
+
+	g.Set(float64(fi.Size()))
+
+	return nil
 }
