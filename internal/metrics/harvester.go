@@ -25,6 +25,8 @@ type HarvesterServiceMetrics struct {
 
 	// Farming Info Metrics
 	totalPlots         *wrappedPrometheus.LazyGauge
+	totalPoolPlots     *wrappedPrometheus.LazyGauge
+	totalOGPlots       *wrappedPrometheus.LazyGauge
 	plotFilesize       *prometheus.GaugeVec
 	totalFoundProofs   *wrappedPrometheus.LazyCounter
 	lastFoundProofs    *wrappedPrometheus.LazyGauge
@@ -35,7 +37,9 @@ type HarvesterServiceMetrics struct {
 
 // InitMetrics sets all the metrics properties
 func (s *HarvesterServiceMetrics) InitMetrics() {
-	s.totalPlots = s.metrics.newGauge(chiaServiceHarvester, "total_plots", "Total number plots on this harvester")
+	s.totalPlots = s.metrics.newGauge(chiaServiceHarvester, "total_plots", "Total number of plots on this harvester")
+	s.totalPoolPlots = s.metrics.newGauge(chiaServiceHarvester, "total_pool_plots", "Total number of pool plots on this harvester")
+	s.totalOGPlots = s.metrics.newGauge(chiaServiceHarvester, "total_og_plots", "Total number of OG plots on this harvester")
 	s.plotFilesize = s.metrics.newGaugeVec(chiaServiceHarvester, "plot_filesize", "Total filesize of plots on this harvester, by K size", []string{"size"})
 
 	s.totalFoundProofs = s.metrics.newCounter(chiaServiceHarvester, "total_found_proofs", "Counter of total found proofs since the exporter started")
@@ -80,11 +84,14 @@ func (s *HarvesterServiceMetrics) FarmingInfo(resp *types.WebsocketResponse) {
 	}
 
 	s.totalPlots.Set(float64(info.TotalPlots))
+	log.Debugf("New Plot Count: %d | Previous Plot Count: %d\n", info.TotalPlots, s.totalPlotsValue)
+	// We actually set the _new_ value of totalPlotsValue in the get_plots handler, to make sure that request was successful
 	if info.TotalPlots != s.totalPlotsValue {
 		// Gets plot info (filesize, etc) when the number of plots changes
+		log.Debug("Calling get_plots")
 		utils.LogErr(s.metrics.client.HarvesterService.GetPlots())
 	}
-	s.totalPlotsValue = info.TotalPlots
+
 
 	s.totalFoundProofs.Add(float64(info.FoundProofs))
 	s.lastFoundProofs.Set(float64(info.FoundProofs))
@@ -106,6 +113,8 @@ func (s *HarvesterServiceMetrics) GetPlots(resp *types.WebsocketResponse) {
 
 	// First, iterate through all the plots to get totals for each ksize
 	plotSize := map[uint8]uint64{}
+	ogPlotCount := 0
+	poolPlotCount := 0
 	for _, plot := range plots.Plots {
 		kSize := plot.Size
 
@@ -114,10 +123,21 @@ func (s *HarvesterServiceMetrics) GetPlots(resp *types.WebsocketResponse) {
 		}
 
 		plotSize[kSize] += plot.FileSize
+
+		if plot.PoolContractPuzzleHash != "" {
+			poolPlotCount++
+		} else {
+			ogPlotCount++
+		}
 	}
 
 	// Now we can set the gauges with the calculated total values
 	for kSize, fileSize := range plotSize {
 		s.plotFilesize.WithLabelValues(fmt.Sprintf("%d", kSize)).Set(float64(fileSize))
 	}
+
+	s.totalPoolPlots.Set(float64(poolPlotCount))
+	s.totalOGPlots.Set(float64(ogPlotCount))
+
+	s.totalPlotsValue = uint64(len(plots.Plots))
 }
