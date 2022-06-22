@@ -10,7 +10,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	wrappedPrometheus "github.com/chia-network/chia-exporter/internal/prometheus"
-	"github.com/chia-network/chia-exporter/internal/utils"
 )
 
 // Metrics that are based on Harvester RPC calls are in this file
@@ -60,7 +59,11 @@ func (s *HarvesterServiceMetrics) httpGetPlots() {
 	// get_plots seems to sometimes not respond on websockets, so doing http request for this
 	log.Debug("Calling get_plots with http client")
 	plots, _, err := s.metrics.httpClient.HarvesterService.GetPlots()
-	utils.LogErr(plots, nil, err)
+	if err != nil {
+		log.Warnf("Could not get plot information from harvester: %s\n", err.Error())
+		return
+	}
+
 	s.ProcessGetPlots(plots)
 }
 

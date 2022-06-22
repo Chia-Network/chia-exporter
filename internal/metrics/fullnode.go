@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -330,9 +331,13 @@ func (s *FullNodeServiceMetrics) RefreshFileSizes() {
 }
 
 func setGaugeToFilesize(file string, g *wrappedPrometheus.LazyGauge) error {
-	log.Debugf("Getting filesize of %s\n", file)
+	log.Debugf("file: chia_full_node Getting filesize of %s\n", file)
 	fi, err := os.Stat(file)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			log.Debugf("file: chia_full_node file doesn't exist: %s\n", file)
+			return nil
+		}
 		return err
 	}
 
