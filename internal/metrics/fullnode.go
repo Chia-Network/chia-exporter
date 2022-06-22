@@ -337,10 +337,8 @@ func setGaugeToFilesize(file string, g *wrappedPrometheus.LazyGauge) error {
 		if errors.Is(err, os.ErrNotExist) {
 			log.Debugf("file: chia_full_node file doesn't exist: %s\n", file)
 			return nil
-		} else {
-			return err
 		}
-
+		return err
 	}
 
 	g.Set(float64(fi.Size()))
