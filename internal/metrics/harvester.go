@@ -160,6 +160,7 @@ func (s *HarvesterServiceMetrics) ProcessGetPlots(plots *rpc.HarvesterGetPlotsRe
 
 	s.totalPoolPlots.Set(float64(poolPlotCount))
 	s.totalOGPlots.Set(float64(ogPlotCount))
+	s.totalPlots.Set(float64(ogPlotCount + poolPlotCount))
 
 	s.totalPlotsValue = uint64(len(plots.Plots))
 }
