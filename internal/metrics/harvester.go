@@ -24,9 +24,8 @@ type HarvesterServiceMetrics struct {
 
 	// Farming Info Metrics
 	totalPlots         *wrappedPrometheus.LazyGauge
-	totalPoolPlots     *wrappedPrometheus.LazyGauge
-	totalOGPlots       *wrappedPrometheus.LazyGauge
 	plotFilesize       *prometheus.GaugeVec
+	plotCount          *prometheus.GaugeVec
 	totalFoundProofs   *wrappedPrometheus.LazyCounter
 	lastFoundProofs    *wrappedPrometheus.LazyGauge
 	totalEligiblePlots *wrappedPrometheus.LazyCounter
@@ -37,9 +36,8 @@ type HarvesterServiceMetrics struct {
 // InitMetrics sets all the metrics properties
 func (s *HarvesterServiceMetrics) InitMetrics() {
 	s.totalPlots = s.metrics.newGauge(chiaServiceHarvester, "total_plots", "Total number of plots on this harvester")
-	s.totalPoolPlots = s.metrics.newGauge(chiaServiceHarvester, "total_pool_plots", "Total number of pool plots on this harvester")
-	s.totalOGPlots = s.metrics.newGauge(chiaServiceHarvester, "total_og_plots", "Total number of OG plots on this harvester")
 	s.plotFilesize = s.metrics.newGaugeVec(chiaServiceHarvester, "plot_filesize", "Total filesize of plots on this harvester, by K size", []string{"size", "type"})
+	s.plotCount = s.metrics.newGaugeVec(chiaServiceHarvester, "plot_count", "Total count of plots on this harvester, by K size", []string{"size", "type"})
 
 	s.totalFoundProofs = s.metrics.newCounter(chiaServiceHarvester, "total_found_proofs", "Counter of total found proofs since the exporter started")
 	s.lastFoundProofs = s.metrics.newGauge(chiaServiceHarvester, "last_found_proofs", "Number of proofs found for the last farmer_info event")
@@ -131,8 +129,8 @@ func (s *HarvesterServiceMetrics) ProcessGetPlots(plots *rpc.HarvesterGetPlotsRe
 	plotTypePool := plotType(1)
 
 	plotSize := map[uint8]map[plotType]uint64{}
-	ogPlotCount := 0
-	poolPlotCount := 0
+	plotCount := map[uint8]map[plotType]uint64{}
+
 	for _, plot := range plots.Plots {
 		kSize := plot.Size
 
@@ -143,12 +141,19 @@ func (s *HarvesterServiceMetrics) ProcessGetPlots(plots *rpc.HarvesterGetPlotsRe
 			}
 		}
 
+		if _, ok := plotCount[kSize]; !ok {
+			plotCount[kSize] = map[plotType]uint64{
+				plotTypeOg:   0,
+				plotTypePool: 0,
+			}
+		}
+
 		if plot.PoolContractPuzzleHash != "" {
-			poolPlotCount++
 			plotSize[kSize][plotTypePool] += plot.FileSize
+			plotCount[kSize][plotTypePool]++
 		} else {
-			ogPlotCount++
 			plotSize[kSize][plotTypeOg] += plot.FileSize
+			plotCount[kSize][plotTypeOg]++
 		}
 	}
 
@@ -158,9 +163,13 @@ func (s *HarvesterServiceMetrics) ProcessGetPlots(plots *rpc.HarvesterGetPlotsRe
 		s.plotFilesize.WithLabelValues(fmt.Sprintf("%d", kSize), "pool").Set(float64(fileSizes[plotTypePool]))
 	}
 
-	s.totalPoolPlots.Set(float64(poolPlotCount))
-	s.totalOGPlots.Set(float64(ogPlotCount))
-	s.totalPlots.Set(float64(ogPlotCount + poolPlotCount))
+	for kSize, plotCountByType := range plotCount {
+		s.plotCount.WithLabelValues(fmt.Sprintf("%d", kSize), "og").Set(float64(plotCountByType[plotTypeOg]))
+		s.plotCount.WithLabelValues(fmt.Sprintf("%d", kSize), "pool").Set(float64(plotCountByType[plotTypePool]))
+	}
 
-	s.totalPlotsValue = uint64(len(plots.Plots))
+	totalPlotCount := len(plots.Plots)
+	s.totalPlots.Set(float64(totalPlotCount))
+
+	s.totalPlotsValue = uint64(totalPlotCount)
 }
