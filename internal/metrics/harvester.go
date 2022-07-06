@@ -68,6 +68,8 @@ func (s *HarvesterServiceMetrics) httpGetPlots() {
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *HarvesterServiceMetrics) Disconnected() {
 	s.totalPlots.Unregister()
+	s.plotFilesize.Reset()
+	s.plotCount.Reset()
 	s.lastFoundProofs.Unregister()
 	s.lastEligiblePlots.Unregister()
 	s.lastLookupTime.Unregister()
