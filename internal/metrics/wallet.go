@@ -124,6 +124,7 @@ func (s *WalletServiceMetrics) GetWalletBalance(resp *types.WebsocketResponse) {
 		walletID := fmt.Sprintf("%d", walletBalance.Balance.WalletID)
 		// @TODO need to get asset ID if a CAT, and wallet type in all cases
 		// This is better from the balance API, vs multiple endpoints, so making a PR to hopefully get this included
+		// Waiting for https://github.com/Chia-Network/chia-blockchain/pull/12276
 
 		if walletBalance.Balance.ConfirmedWalletBalance.FitsInUint64() {
 			s.confirmedBalance.WithLabelValues(fingerprint, walletID).Set(float64(walletBalance.Balance.ConfirmedWalletBalance.Uint64()))
