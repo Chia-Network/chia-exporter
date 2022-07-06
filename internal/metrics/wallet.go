@@ -45,11 +45,7 @@ func (s *WalletServiceMetrics) InitMetrics() {
 // InitialData is called on startup of the metrics server, to allow seeding metrics with
 // current/initial data
 func (s *WalletServiceMetrics) InitialData() {
-	// For bootstrapping the wallet, we're assuming wallet_id 1 for now
-	// @TODO should actually get the IDs that exist, and ask for those instead
-	// Better than (or in addition to) wallet ID is probably the asset ID for the wallet, particularly if its a CAT
-	// Otherwise some other consistent identifier would be very useful for historical metrics across different nodes
-	utils.LogErr(s.metrics.client.WalletService.GetWalletBalance(&rpc.GetWalletBalanceOptions{WalletID: 1}))
+	utils.LogErr(s.metrics.client.WalletService.GetWallets())
 	utils.LogErr(s.metrics.client.WalletService.GetSyncStatus())
 }
 
@@ -74,6 +70,8 @@ func (s *WalletServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 		s.GetSyncStatus(resp)
 	case "get_wallet_balance":
 		s.GetWalletBalance(resp)
+	case "get_wallets":
+		s.GetWallets(resp)
 	}
 }
 
@@ -124,6 +122,8 @@ func (s *WalletServiceMetrics) GetWalletBalance(resp *types.WebsocketResponse) {
 	if walletBalance.Balance != nil {
 		fingerprint := fmt.Sprintf("%d", walletBalance.Balance.Fingerprint)
 		walletID := fmt.Sprintf("%d", walletBalance.Balance.WalletID)
+		// @TODO need to get asset ID if a CAT, and wallet type in all cases
+		// This is better from the balance API, vs multiple endpoints, so making a PR to hopefully get this included
 
 		if walletBalance.Balance.ConfirmedWalletBalance.FitsInUint64() {
 			s.confirmedBalance.WithLabelValues(fingerprint, walletID).Set(float64(walletBalance.Balance.ConfirmedWalletBalance.Uint64()))
@@ -136,5 +136,19 @@ func (s *WalletServiceMetrics) GetWalletBalance(resp *types.WebsocketResponse) {
 		s.maxSendAmount.WithLabelValues(fingerprint, walletID).Set(float64(walletBalance.Balance.MaxSendAmount))
 		s.pendingCoinRemovalCount.WithLabelValues(fingerprint, walletID).Set(float64(walletBalance.Balance.PendingCoinRemovalCount))
 		s.unspentCoinCount.WithLabelValues(fingerprint, walletID).Set(float64(walletBalance.Balance.UnspentCoinCount))
+	}
+}
+
+// GetWallets handles a response for get_wallets and asks for the balance of each wallet
+func (s *WalletServiceMetrics) GetWallets(resp *types.WebsocketResponse) {
+	wallets := &rpc.GetWalletsResponse{}
+	err := json.Unmarshal(resp.Data, wallets)
+	if err != nil {
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
+		return
+	}
+
+	for _, wallet := range wallets.Wallets {
+		utils.LogErr(s.metrics.client.WalletService.GetWalletBalance(&rpc.GetWalletBalanceOptions{WalletID: wallet.ID}))
 	}
 }
