@@ -34,7 +34,7 @@ type WalletServiceMetrics struct {
 func (s *WalletServiceMetrics) InitMetrics() {
 	// Wallet Metrics
 	s.walletSynced = s.metrics.newGauge(chiaServiceWallet, "synced", "")
-	walletLabels := []string{"fingerprint", "wallet_id"}
+	walletLabels := []string{"fingerprint", "wallet_id", "wallet_type", "asset_id"}
 	s.confirmedBalance = s.metrics.newGaugeVec(chiaServiceWallet, "confirmed_balance", "", walletLabels)
 	s.spendableBalance = s.metrics.newGaugeVec(chiaServiceWallet, "spendable_balance", "", walletLabels)
 	s.maxSendAmount = s.metrics.newGaugeVec(chiaServiceWallet, "max_send_amount", "", walletLabels)
@@ -122,21 +122,23 @@ func (s *WalletServiceMetrics) GetWalletBalance(resp *types.WebsocketResponse) {
 	if walletBalance.Balance != nil {
 		fingerprint := fmt.Sprintf("%d", walletBalance.Balance.Fingerprint)
 		walletID := fmt.Sprintf("%d", walletBalance.Balance.WalletID)
-		// @TODO need to get asset ID if a CAT, and wallet type in all cases
-		// This is better from the balance API, vs multiple endpoints, so making a PR to hopefully get this included
-		// Waiting for https://github.com/Chia-Network/chia-blockchain/pull/12276
+		walletType := ""
+		if walletBalance.Balance.WalletType != nil {
+			walletType = fmt.Sprintf("%d", *walletBalance.Balance.WalletType)
+		}
+		assetID := walletBalance.Balance.AssetID
 
 		if walletBalance.Balance.ConfirmedWalletBalance.FitsInUint64() {
-			s.confirmedBalance.WithLabelValues(fingerprint, walletID).Set(float64(walletBalance.Balance.ConfirmedWalletBalance.Uint64()))
+			s.confirmedBalance.WithLabelValues(fingerprint, walletID, walletType, assetID).Set(float64(walletBalance.Balance.ConfirmedWalletBalance.Uint64()))
 		}
 
 		if walletBalance.Balance.SpendableBalance.FitsInUint64() {
-			s.spendableBalance.WithLabelValues(fingerprint, walletID).Set(float64(walletBalance.Balance.SpendableBalance.Uint64()))
+			s.spendableBalance.WithLabelValues(fingerprint, walletID, walletType, assetID).Set(float64(walletBalance.Balance.SpendableBalance.Uint64()))
 		}
 
-		s.maxSendAmount.WithLabelValues(fingerprint, walletID).Set(float64(walletBalance.Balance.MaxSendAmount))
-		s.pendingCoinRemovalCount.WithLabelValues(fingerprint, walletID).Set(float64(walletBalance.Balance.PendingCoinRemovalCount))
-		s.unspentCoinCount.WithLabelValues(fingerprint, walletID).Set(float64(walletBalance.Balance.UnspentCoinCount))
+		s.maxSendAmount.WithLabelValues(fingerprint, walletID, walletType, assetID).Set(float64(walletBalance.Balance.MaxSendAmount))
+		s.pendingCoinRemovalCount.WithLabelValues(fingerprint, walletID, walletType, assetID).Set(float64(walletBalance.Balance.PendingCoinRemovalCount))
+		s.unspentCoinCount.WithLabelValues(fingerprint, walletID, walletType, assetID).Set(float64(walletBalance.Balance.UnspentCoinCount))
 	}
 }
 
