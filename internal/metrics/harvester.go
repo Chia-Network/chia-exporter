@@ -75,6 +75,11 @@ func (s *HarvesterServiceMetrics) Disconnected() {
 	s.lastLookupTime.Unregister()
 }
 
+// Reconnected is called when the service is reconnected after the websocket was disconnected
+func (s *HarvesterServiceMetrics) Reconnected() {
+	s.InitialData()
+}
+
 // ReceiveResponse handles crawler responses that are returned over the websocket
 func (s *HarvesterServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	switch resp.Command {

@@ -48,6 +48,11 @@ func (s *TimelordServiceMetrics) Disconnected() {
 	s.compactProofsFound.Reset()
 }
 
+// Reconnected is called when the service is reconnected after the websocket was disconnected
+func (s *TimelordServiceMetrics) Reconnected() {
+	s.InitialData()
+}
+
 // ReceiveResponse handles crawler responses that are returned over the websocket
 func (s *TimelordServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	//("finished_pot_challenge", "new_compact_proof", "skipping_peak", "new_peak")

@@ -59,6 +59,11 @@ func (s *WalletServiceMetrics) Disconnected() {
 	s.unspentCoinCount.Reset()
 }
 
+// Reconnected is called when the service is reconnected after the websocket was disconnected
+func (s *WalletServiceMetrics) Reconnected() {
+	s.InitialData()
+}
+
 // ReceiveResponse handles wallet responses that are returned over the websocket
 func (s *WalletServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	switch resp.Command {
