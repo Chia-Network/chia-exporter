@@ -153,6 +153,11 @@ func (s *FullNodeServiceMetrics) Disconnected() {
 	s.currentSignagePoint.Unregister()
 }
 
+// Reconnected is called when the service is reconnected after the websocket was disconnected
+func (s *FullNodeServiceMetrics) Reconnected() {
+	s.InitialData()
+}
+
 // ReceiveResponse handles full node related responses that are returned over the websocket
 func (s *FullNodeServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	switch resp.Command {

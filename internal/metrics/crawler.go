@@ -16,6 +16,7 @@ import (
 	"github.com/oschwald/maxminddb-golang"
 
 	wrappedPrometheus "github.com/chia-network/chia-exporter/internal/prometheus"
+	"github.com/chia-network/chia-exporter/internal/utils"
 )
 
 // Metrics that are based on Crawler RPC calls are in this file
@@ -71,7 +72,9 @@ func (s *CrawlerServiceMetrics) initMaxmindDB() error {
 }
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with current/initial data
-func (s *CrawlerServiceMetrics) InitialData() {}
+func (s *CrawlerServiceMetrics) InitialData() {
+	utils.LogErr(s.metrics.client.CrawlerService.GetPeerCounts())
+}
 
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *CrawlerServiceMetrics) Disconnected() {
@@ -81,6 +84,11 @@ func (s *CrawlerServiceMetrics) Disconnected() {
 	s.ipv6Nodes5Days.Unregister()
 	s.versionBuckets.Reset()
 	s.countryNodeCountBuckets.Reset()
+}
+
+// Reconnected is called when the service is reconnected after the websocket was disconnected
+func (s *CrawlerServiceMetrics) Reconnected() {
+	s.InitialData()
 }
 
 // ReceiveResponse handles crawler responses that are returned over the websocket

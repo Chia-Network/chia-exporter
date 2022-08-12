@@ -39,6 +39,9 @@ type serviceMetrics interface {
 
 	// Disconnected is called when the websocket is disconnected, to clear metrics, etc
 	Disconnected()
+
+	// Reconnected is called when the websocket is reconnected after a disconnection
+	Reconnected()
 }
 
 // Metrics is the main entrypoint
@@ -189,6 +192,7 @@ func (m *Metrics) OpenWebsocket() error {
 	}
 
 	m.client.AddDisconnectHandler(m.disconnectHandler)
+	m.client.AddReconnectHandler(m.reconnectHandler)
 
 	for _, service := range m.serviceMetrics {
 		service.InitialData()
@@ -239,8 +243,16 @@ func (m *Metrics) websocketReceive(resp *types.WebsocketResponse, err error) {
 }
 
 func (m *Metrics) disconnectHandler() {
+	log.Debug("Calling disconnect handlers")
 	for _, service := range m.serviceMetrics {
 		service.Disconnected()
+	}
+}
+
+func (m *Metrics) reconnectHandler() {
+	log.Debug("Calling reconnect handlers")
+	for _, service := range m.serviceMetrics {
+		service.Reconnected()
 	}
 }
 

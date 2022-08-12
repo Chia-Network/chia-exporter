@@ -44,6 +44,11 @@ func (s *FarmerServiceMetrics) InitialData() {}
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *FarmerServiceMetrics) Disconnected() {}
 
+// Reconnected is called when the service is reconnected after the websocket was disconnected
+func (s *FarmerServiceMetrics) Reconnected() {
+	s.InitialData()
+}
+
 // ReceiveResponse handles crawler responses that are returned over the websocket
 func (s *FarmerServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	switch resp.Command {
