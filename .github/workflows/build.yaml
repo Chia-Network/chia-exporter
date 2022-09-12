@@ -41,7 +41,7 @@ jobs:
         GOARCH: ["amd64", "arm64"]
     steps:
       - name: Install fpm
-        run: gem install fpm
+        run: sudo gem install fpm
 
       - uses: actions/download-artifact@v3
         with:
