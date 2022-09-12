@@ -104,4 +104,4 @@ jobs:
         with:
           files: |
             ${{ steps.release-files.outputs.FILES }}
-            artifacts/*.deb
+            artifacts/installer-chia-exporter*/*.deb
