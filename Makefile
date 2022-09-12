@@ -12,6 +12,11 @@ V = 0
 Q = $(if $(filter 1,$V),,@)
 M = $(shell printf "\033[34;1m▶\033[0m")
 
+binext=""
+ifeq ($(GOOS),windows)
+  binext=".exe"
+endif
+
 export GO111MODULE=on
 
 .PHONY: all
@@ -21,7 +26,7 @@ all: fmt lint vet build
 build: $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
 	$Q CGO_ENABLED=0 $(GO) build \
 		-tags release \
-		-o $(BIN)/ $(notdir $(basename $(MODULE))).go
+		-o $(BIN)/$(notdir $(basename $(MODULE)))$(binext) main.go
 # Tools
 
 $(BIN):

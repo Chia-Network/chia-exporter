@@ -4,6 +4,44 @@ Chia Exporter is an application that is intended to run alongside a chia install
 
 **_This project is actively under development and relies on data that may not yet be available in a stable release of Chia Blockchain. Dev builds of chia may contain bugs or other issues that are not present in tagged releases. We do not recommend that you run pre-release/dev versions of Chia Blockchain on mission critical systems._**
 
+## Installation
+
+Download the correct executable file from the release page and run. If you are on debian/ubuntu, you can install using the apt repo, documented below.
+
+### Apt Repo Installation
+
+#### Set up the repository
+
+1. Update the `apt` package index and install packages to allow apt to use a repository over HTTPS:
+
+```shell
+sudo apt-get update
+
+sudo apt-get install ca-certificates curl gnupg
+```
+
+2. Add Chia's official GPG Key:
+
+```shell
+curl -sL https://repo.chia.net/FD39E6D3.pubkey.asc | sudo gpg --dearmor -o /usr/share/keyrings/chia.gpg
+```
+
+3. Use the following command to set up the stable repository.
+
+```shell 
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/chia.gpg] https://repo.chia.net/chia-exporter/debian/ stable main" | sudo tee /etc/apt/sources.list.d/chia-exporter.list > /dev/null
+```
+
+#### Install Chia Exporter
+
+1. Update the apt package index and install the latest version of Chia Exporter
+
+```shell
+sudo apt-get update
+
+sudo apt-get install chia-exporter
+```
+
 ## Usage
 
 First, install [chia-blockchain](https://github.com/Chia-Network/chia-blockchain). Chia exporter expects to be run on the same machine as the chia blockchain installation, and will use either the default chia config (`~/.chia/mainnet/`) or else the config located at `CHIA_ROOT`, if the environment variable is set.
