@@ -50,7 +50,7 @@ jobs:
 
       - name: Generate .deb
         run: |
-          fpm -s dir -t deb --prefix /usr/local/bin --chdir artifacts -n chia-exporter -v 0.4.2 .
+          fpm -s dir -t deb --prefix /usr/local/bin --chdir artifacts -n chia-exporter -a ${{ matrix.GOARCH }} -v 0.4.2 .
           mkdir -p installer-out
           mv *.deb installer-out/
 
@@ -95,4 +95,6 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: ${{ steps.release-files.outputs.FILES }}
+          files: |
+            ${{ steps.release-files.outputs.FILES }}
+            artifacts/*.deb
