@@ -45,7 +45,7 @@ func (s *WalletServiceMetrics) InitMetrics() {
 // InitialData is called on startup of the metrics server, to allow seeding metrics with
 // current/initial data
 func (s *WalletServiceMetrics) InitialData() {
-	utils.LogErr(s.metrics.client.WalletService.GetWallets())
+	utils.LogErr(s.metrics.client.WalletService.GetWallets(&rpc.GetWalletsOptions{}))
 	utils.LogErr(s.metrics.client.WalletService.GetSyncStatus())
 }
 
