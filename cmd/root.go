@@ -29,6 +29,7 @@ func Execute() {
 
 func init() {
 	var (
+		hostname      string
 		metricsPort   int
 		maxmindDBPath string
 		logLevel      string
@@ -37,11 +38,17 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.chia-exporter.yaml)")
 
+	rootCmd.PersistentFlags().StringVar(&hostname, "hostname", "localhost", "The hostname to connect to")
 	rootCmd.PersistentFlags().IntVar(&metricsPort, "metrics-port", 9914, "The port the metrics server binds to")
 	rootCmd.PersistentFlags().StringVar(&maxmindDBPath, "maxmind-db-path", "", "Path to the maxmind database file")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "How verbose the logs should be. panic, fatal, error, warn, info, debug, trace")
 
-	err := viper.BindPFlag("metrics-port", rootCmd.PersistentFlags().Lookup("metrics-port"))
+	err := viper.BindPFlag("hostname", rootCmd.PersistentFlags().Lookup("hostname"))
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	err = viper.BindPFlag("metrics-port", rootCmd.PersistentFlags().Lookup("metrics-port"))
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
