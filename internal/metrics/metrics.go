@@ -3,8 +3,10 @@ package metrics
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	"github.com/chia-network/go-chia-libs/pkg/rpc"
 	"github.com/chia-network/go-chia-libs/pkg/types"
@@ -74,12 +76,18 @@ func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
 
 	log.SetLevel(logLevel)
 
-	metrics.client, err = rpc.NewClient(rpc.ConnectionModeWebsocket)
+	metrics.client, err = rpc.NewClient(rpc.ConnectionModeWebsocket, rpc.WithBaseURL(&url.URL{
+		Scheme: "wss",
+		Host:   viper.GetString("hostname"),
+	}))
 	if err != nil {
 		return nil, err
 	}
 
-	metrics.httpClient, err = rpc.NewClient(rpc.ConnectionModeHTTP)
+	metrics.httpClient, err = rpc.NewClient(rpc.ConnectionModeHTTP, rpc.WithBaseURL(&url.URL{
+		Scheme: "https",
+		Host:   viper.GetString("hostname"),
+	}))
 	if err != nil {
 		// For now, http client is optional
 		// Sometimes this fails with outdated config.yaml files that don't have the crawler/seeder section present
