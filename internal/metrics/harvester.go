@@ -155,7 +155,7 @@ func (s *HarvesterServiceMetrics) ProcessGetPlots(plots *rpc.HarvesterGetPlotsRe
 			}
 		}
 
-		if plot.PoolContractPuzzleHash != "" {
+		if plot.PoolContractPuzzleHash != nil {
 			plotSize[kSize][plotTypePool] += plot.FileSize
 			plotCount[kSize][plotTypePool]++
 		} else {
