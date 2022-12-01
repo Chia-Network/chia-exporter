@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/chia-network/go-chia-libs v0.2.0
-	github.com/oschwald/maxminddb-golang v1.8.0
+	github.com/oschwald/maxminddb-golang v1.10.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.6.1
