@@ -187,18 +187,16 @@ func (s *FullNodeServiceMetrics) GetBlockchainState(resp *types.WebsocketRespons
 		return
 	}
 
-	if state.BlockchainState.Sync != nil {
-		if state.BlockchainState.Sync.Synced {
-			s.nodeSynced.Set(1)
-		} else {
-			s.nodeSynced.Set(0)
-		}
+	if state.BlockchainState.Sync.Synced {
+		s.nodeSynced.Set(1)
+	} else {
+		s.nodeSynced.Set(0)
 	}
 
-	if state.BlockchainState.Peak != nil {
-		s.nodeHeight.Set(float64(state.BlockchainState.Peak.Height))
+	if peak, hasPeak := state.BlockchainState.Peak.Get(); hasPeak {
+		s.nodeHeight.Set(float64(peak.Height))
 		if state.BlockchainState.Sync.Synced {
-			s.nodeHeightSynced.Set(float64(state.BlockchainState.Peak.Height))
+			s.nodeHeightSynced.Set(float64(peak.Height))
 		} else {
 			s.nodeHeightSynced.Unregister()
 		}
@@ -213,9 +211,7 @@ func (s *FullNodeServiceMetrics) GetBlockchainState(resp *types.WebsocketRespons
 	s.mempoolSize.Set(float64(state.BlockchainState.MempoolSize))
 	s.mempoolCost.Set(float64(state.BlockchainState.MempoolCost))
 	s.mempoolMaxTotalCost.Set(float64(state.BlockchainState.MempoolMaxTotalCost))
-	if state.BlockchainState.MempoolMinFees != nil {
-		s.mempoolMinFee.WithLabelValues("5000000").Set(float64(state.BlockchainState.MempoolMinFees.Cost5m))
-	}
+	s.mempoolMinFee.WithLabelValues("5000000").Set(state.BlockchainState.MempoolMinFees.Cost5m)
 	s.maxBlockCost.Set(float64(state.BlockchainState.BlockMaxCost))
 }
 
@@ -235,8 +231,8 @@ func (s *FullNodeServiceMetrics) GetConnections(resp *types.WebsocketResponse) {
 	introducer := 0.0
 	wallet := 0.0
 
-	for _, connection := range connections.Connections {
-		if connection != nil {
+	if conns, hasConns := connections.Connections.Get(); hasConns {
+		for _, connection := range conns {
 			switch connection.Type {
 			case types.NodeTypeFullNode:
 				fullNode++
@@ -276,8 +272,8 @@ func (s *FullNodeServiceMetrics) Block(resp *types.WebsocketResponse) {
 	s.validationTime.Set(block.ValidationTime)
 
 	if block.TransactionBlock {
-		s.blockCost.Set(float64(block.BlockCost))
-		s.blockFees.Set(float64(block.BlockFees))
+		s.blockCost.Set(float64(block.BlockCost.OrEmpty()))
+		s.blockFees.Set(float64(block.BlockFees.OrEmpty()))
 	}
 }
 
@@ -291,10 +287,10 @@ func (s *FullNodeServiceMetrics) GetBlockCountMetrics(resp *types.WebsocketRespo
 		return
 	}
 
-	if blockMetrics.Metrics != nil {
-		s.compactBlocks.Set(float64(blockMetrics.Metrics.CompactBlocks))
-		s.uncompactBlocks.Set(float64(blockMetrics.Metrics.UncompactBlocks))
-		s.hintCount.Set(float64(blockMetrics.Metrics.HintCount))
+	if metrics, hasMetrics := blockMetrics.Metrics.Get(); hasMetrics {
+		s.compactBlocks.Set(float64(metrics.CompactBlocks))
+		s.uncompactBlocks.Set(float64(metrics.UncompactBlocks))
+		s.hintCount.Set(float64(metrics.HintCount))
 	}
 }
 

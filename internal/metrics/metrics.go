@@ -76,7 +76,7 @@ func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
 
 	log.SetLevel(logLevel)
 
-	metrics.client, err = rpc.NewClient(rpc.ConnectionModeWebsocket, rpc.WithBaseURL(&url.URL{
+	metrics.client, err = rpc.NewClient(rpc.ConnectionModeWebsocket, rpc.WithAutoConfig(), rpc.WithBaseURL(&url.URL{
 		Scheme: "wss",
 		Host:   viper.GetString("hostname"),
 	}))
@@ -84,7 +84,7 @@ func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
 		return nil, err
 	}
 
-	metrics.httpClient, err = rpc.NewClient(rpc.ConnectionModeHTTP, rpc.WithBaseURL(&url.URL{
+	metrics.httpClient, err = rpc.NewClient(rpc.ConnectionModeHTTP, rpc.WithAutoConfig(), rpc.WithBaseURL(&url.URL{
 		Scheme: "https",
 		Host:   viper.GetString("hostname"),
 	}))

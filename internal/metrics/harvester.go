@@ -138,7 +138,7 @@ func (s *HarvesterServiceMetrics) ProcessGetPlots(plots *rpc.HarvesterGetPlotsRe
 	plotSize := map[uint8]map[plotType]uint64{}
 	plotCount := map[uint8]map[plotType]uint64{}
 
-	for _, plot := range plots.Plots {
+	for _, plot := range plots.Plots.OrEmpty() {
 		kSize := plot.Size
 
 		if _, ok := plotSize[kSize]; !ok {
@@ -155,7 +155,7 @@ func (s *HarvesterServiceMetrics) ProcessGetPlots(plots *rpc.HarvesterGetPlotsRe
 			}
 		}
 
-		if plot.PoolContractPuzzleHash != nil {
+		if plot.PoolContractPuzzleHash.IsPresent() {
 			plotSize[kSize][plotTypePool] += plot.FileSize
 			plotCount[kSize][plotTypePool]++
 		} else {
@@ -175,7 +175,7 @@ func (s *HarvesterServiceMetrics) ProcessGetPlots(plots *rpc.HarvesterGetPlotsRe
 		s.plotCount.WithLabelValues(fmt.Sprintf("%d", kSize), "pool").Set(float64(plotCountByType[plotTypePool]))
 	}
 
-	totalPlotCount := len(plots.Plots)
+	totalPlotCount := len(plots.Plots.OrEmpty())
 	s.totalPlots.Set(float64(totalPlotCount))
 
 	s.totalPlotsValue = uint64(totalPlotCount)

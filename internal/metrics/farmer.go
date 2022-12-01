@@ -68,9 +68,9 @@ func (s *FarmerServiceMetrics) SubmittedPartial(resp *types.WebsocketResponse) {
 		return
 	}
 
-	s.submittedPartials.WithLabelValues(partial.LauncherID).Inc()
-	s.currentDifficulty.WithLabelValues(partial.LauncherID).Set(float64(partial.CurrentDifficulty))
-	s.pointsAckSinceStart.WithLabelValues(partial.LauncherID).Set(float64(partial.PointsAcknowledgedSinceStart))
+	s.submittedPartials.WithLabelValues(partial.LauncherID.String()).Inc()
+	s.currentDifficulty.WithLabelValues(partial.LauncherID.String()).Set(float64(partial.CurrentDifficulty))
+	s.pointsAckSinceStart.WithLabelValues(partial.LauncherID.String()).Set(float64(partial.PointsAcknowledgedSinceStart))
 }
 
 // Proof handles a received `proof` event from the farmer
