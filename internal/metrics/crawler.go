@@ -112,17 +112,17 @@ func (s *CrawlerServiceMetrics) GetPeerCounts(resp *types.WebsocketResponse) {
 		return
 	}
 
-	if counts.PeerCounts != nil {
-		s.totalNodes5Days.Set(float64(counts.PeerCounts.TotalLast5Days))
-		s.reliableNodes.Set(float64(counts.PeerCounts.ReliableNodes))
-		s.ipv4Nodes5Days.Set(float64(counts.PeerCounts.IPV4Last5Days))
-		s.ipv6Nodes5Days.Set(float64(counts.PeerCounts.IPV6Last5Days))
+	if peerCounts, hasPeerCounts := counts.PeerCounts.Get(); hasPeerCounts {
+		s.totalNodes5Days.Set(float64(peerCounts.TotalLast5Days))
+		s.reliableNodes.Set(float64(peerCounts.ReliableNodes))
+		s.ipv4Nodes5Days.Set(float64(peerCounts.IPV4Last5Days))
+		s.ipv6Nodes5Days.Set(float64(peerCounts.IPV6Last5Days))
 
-		for version, count := range counts.PeerCounts.Versions {
+		for version, count := range peerCounts.Versions {
 			s.versionBuckets.WithLabelValues(version).Set(float64(count))
 		}
 
-		s.StartIPCountryMapping(counts.PeerCounts.TotalLast5Days)
+		s.StartIPCountryMapping(peerCounts.TotalLast5Days)
 	}
 }
 
@@ -171,24 +171,26 @@ func (s *CrawlerServiceMetrics) GetIPsAfterTimestamp(ips *rpc.GetIPsAfterTimesta
 	}
 	countryCounts := map[string]*countStruct{}
 
-	for _, ip := range ips.IPs {
-		country, err := s.GetCountryForIP(ip)
-		if err != nil || country.Country.ISOCode == "" {
-			continue
-		}
-
-		countryName := ""
-		countryName = country.Country.Names["en"]
-
-		if _, ok := countryCounts[country.Country.ISOCode]; !ok {
-			countryCounts[country.Country.ISOCode] = &countStruct{
-				ISOCode: country.Country.ISOCode,
-				Name:    countryName,
-				Count:   0,
+	if ipresult, hasIPResult := ips.IPs.Get(); hasIPResult {
+		for _, ip := range ipresult {
+			country, err := s.GetCountryForIP(ip)
+			if err != nil || country.Country.ISOCode == "" {
+				continue
 			}
-		}
 
-		countryCounts[country.Country.ISOCode].Count++
+			countryName := ""
+			countryName = country.Country.Names["en"]
+
+			if _, ok := countryCounts[country.Country.ISOCode]; !ok {
+				countryCounts[country.Country.ISOCode] = &countStruct{
+					ISOCode: country.Country.ISOCode,
+					Name:    countryName,
+					Count:   0,
+				}
+			}
+
+			countryCounts[country.Country.ISOCode].Count++
+		}
 	}
 
 	for _, countryData := range countryCounts {

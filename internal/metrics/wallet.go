@@ -108,7 +108,7 @@ func (s *WalletServiceMetrics) GetSyncStatus(resp *types.WebsocketResponse) {
 		return
 	}
 
-	if syncStatusResponse.Synced {
+	if syncStatusResponse.Synced.OrEmpty() {
 		s.walletSynced.Set(1)
 	} else {
 		s.walletSynced.Set(0)
@@ -124,26 +124,25 @@ func (s *WalletServiceMetrics) GetWalletBalance(resp *types.WebsocketResponse) {
 		return
 	}
 
-	if walletBalance.Balance != nil {
-		fingerprint := fmt.Sprintf("%d", walletBalance.Balance.Fingerprint)
-		walletID := fmt.Sprintf("%d", walletBalance.Balance.WalletID)
-		walletType := ""
-		if walletBalance.Balance.WalletType != nil {
-			walletType = fmt.Sprintf("%d", *walletBalance.Balance.WalletType)
-		}
-		assetID := walletBalance.Balance.AssetID
+	if walletBal, hasWalletBal := walletBalance.Balance.Get(); hasWalletBal {
+		fingerprint := fmt.Sprintf("%d", walletBal.Fingerprint)
+		walletID := fmt.Sprintf("%d", walletBal.WalletID)
+		walletType := fmt.Sprintf("%d", walletBal.WalletType)
+		assetID := walletBal.AssetID
 
-		if walletBalance.Balance.ConfirmedWalletBalance.FitsInUint64() {
-			s.confirmedBalance.WithLabelValues(fingerprint, walletID, walletType, assetID).Set(float64(walletBalance.Balance.ConfirmedWalletBalance.Uint64()))
+		if walletBal.ConfirmedWalletBalance.FitsInUint64() {
+			s.confirmedBalance.WithLabelValues(fingerprint, walletID, walletType, assetID).Set(float64(walletBal.ConfirmedWalletBalance.Uint64()))
 		}
 
-		if walletBalance.Balance.SpendableBalance.FitsInUint64() {
-			s.spendableBalance.WithLabelValues(fingerprint, walletID, walletType, assetID).Set(float64(walletBalance.Balance.SpendableBalance.Uint64()))
+		if walletBal.SpendableBalance.FitsInUint64() {
+			s.spendableBalance.WithLabelValues(fingerprint, walletID, walletType, assetID).Set(float64(walletBal.SpendableBalance.Uint64()))
 		}
 
-		s.maxSendAmount.WithLabelValues(fingerprint, walletID, walletType, assetID).Set(float64(walletBalance.Balance.MaxSendAmount))
-		s.pendingCoinRemovalCount.WithLabelValues(fingerprint, walletID, walletType, assetID).Set(float64(walletBalance.Balance.PendingCoinRemovalCount))
-		s.unspentCoinCount.WithLabelValues(fingerprint, walletID, walletType, assetID).Set(float64(walletBalance.Balance.UnspentCoinCount))
+		if walletBal.MaxSendAmount.FitsInUint64() {
+			s.maxSendAmount.WithLabelValues(fingerprint, walletID, walletType, assetID).Set(float64(walletBal.MaxSendAmount.Uint64()))
+		}
+		s.pendingCoinRemovalCount.WithLabelValues(fingerprint, walletID, walletType, assetID).Set(float64(walletBal.PendingCoinRemovalCount))
+		s.unspentCoinCount.WithLabelValues(fingerprint, walletID, walletType, assetID).Set(float64(walletBal.UnspentCoinCount))
 	}
 }
 
@@ -156,7 +155,7 @@ func (s *WalletServiceMetrics) GetWallets(resp *types.WebsocketResponse) {
 		return
 	}
 
-	for _, wallet := range wallets.Wallets {
+	for _, wallet := range wallets.Wallets.OrEmpty() {
 		utils.LogErr(s.metrics.client.WalletService.GetWalletBalance(&rpc.GetWalletBalanceOptions{WalletID: wallet.ID}))
 	}
 }
