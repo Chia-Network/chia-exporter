@@ -52,7 +52,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         id: tag-name
         run: |
-          echo "::set-output name=TAG_NAME::$(echo ${{ github.ref }} | cut -d'/' -f 3)"
+          echo "TAG_NAME=$(echo ${{ github.ref }} | cut -d'/' -f 3)" >>$GITHUB_OUTPUT
 
       - name: Generate .deb
         run: |
@@ -97,7 +97,7 @@ jobs:
           FILES="${FILES//'%'/'%25'}"
           FILES="${FILES//$'\n'/'%0A'}"
           FILES="${FILES//$'\r'/'%0D'}"
-          echo "::set-output name=FILES::$FILES"
+          echo "FILES=$FILES" >>$GITHUB_OUTPUT
 
       - name: Release
         uses: softprops/action-gh-release@v1
@@ -110,7 +110,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         id: tag-name
         run: |
-          echo "::set-output name=TAG_NAME::$(echo ${{ github.ref }} | cut -d'/' -f 3)"
+          echo "TAG_NAME=$(echo ${{ github.ref }} | cut -d'/' -f 3)" >>$GITHUB_OUTPUT
 
       - name: Trigger apt repo update
         run: |
