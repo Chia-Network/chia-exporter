@@ -76,6 +76,9 @@ func (s *CrawlerServiceMetrics) InitialData() {
 	utils.LogErr(s.metrics.client.CrawlerService.GetPeerCounts())
 }
 
+// SetupPollingMetrics starts any metrics that happen on an interval
+func (s *CrawlerServiceMetrics) SetupPollingMetrics() {}
+
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *CrawlerServiceMetrics) Disconnected() {
 	s.totalNodes5Days.Unregister()

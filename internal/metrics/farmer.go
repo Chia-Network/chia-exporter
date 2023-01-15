@@ -2,12 +2,15 @@ package metrics
 
 import (
 	"encoding/json"
+	"time"
 
+	"github.com/chia-network/go-chia-libs/pkg/rpc"
 	"github.com/chia-network/go-chia-libs/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 
 	wrappedPrometheus "github.com/chia-network/chia-exporter/internal/prometheus"
+	"github.com/chia-network/chia-exporter/internal/utils"
 )
 
 // Metrics that are based on Farmer RPC calls are in this file
@@ -16,6 +19,9 @@ import (
 type FarmerServiceMetrics struct {
 	// Holds a reference to the main metrics container this is a part of
 	metrics *Metrics
+
+	// Connection Metrics
+	connectionCount *prometheus.GaugeVec
 
 	// Partial/Pooling Metrics
 	submittedPartials   *prometheus.CounterVec
@@ -28,6 +34,9 @@ type FarmerServiceMetrics struct {
 
 // InitMetrics sets all the metrics properties
 func (s *FarmerServiceMetrics) InitMetrics() {
+	// Connection Metrics
+	s.connectionCount = s.metrics.newGaugeVec(chiaServiceFarmer, "connection_count", "Number of active connections for each type of peer", []string{"node_type"})
+
 	// Partial/Pooling Metrics, by launcher ID
 	poolLabels := []string{"launcher_id"}
 	s.submittedPartials = s.metrics.newCounterVec(chiaServiceFarmer, "submitted_partials", "Number of partials submitted since the exporter was started", poolLabels)
@@ -41,8 +50,20 @@ func (s *FarmerServiceMetrics) InitMetrics() {
 // InitialData is called on startup of the metrics server, to allow seeding metrics with current/initial data
 func (s *FarmerServiceMetrics) InitialData() {}
 
+// SetupPollingMetrics starts any metrics that happen on an interval
+func (s *FarmerServiceMetrics) SetupPollingMetrics() {
+	go func() {
+		for {
+			utils.LogErr(s.metrics.client.FarmerService.GetConnections(&rpc.GetConnectionsOptions{}))
+			time.Sleep(15 * time.Second)
+		}
+	}()
+}
+
 // Disconnected clears/unregisters metrics when the connection drops
-func (s *FarmerServiceMetrics) Disconnected() {}
+func (s *FarmerServiceMetrics) Disconnected() {
+	s.connectionCount.Reset()
+}
 
 // Reconnected is called when the service is reconnected after the websocket was disconnected
 func (s *FarmerServiceMetrics) Reconnected() {
@@ -52,11 +73,18 @@ func (s *FarmerServiceMetrics) Reconnected() {
 // ReceiveResponse handles crawler responses that are returned over the websocket
 func (s *FarmerServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	switch resp.Command {
+	case "get_connections":
+		s.GetConnections(resp)
 	case "submitted_partial":
 		s.SubmittedPartial(resp)
 	case "proof":
 		s.Proof(resp)
 	}
+}
+
+// GetConnections handler for get_connections events
+func (s *FarmerServiceMetrics) GetConnections(resp *types.WebsocketResponse) {
+	connectionCountHelper(resp, s.connectionCount)
 }
 
 // SubmittedPartial handles a received submitted_partial event
