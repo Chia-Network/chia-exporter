@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -35,6 +36,10 @@ type serviceMetrics interface {
 	// InitialData is called after the websocket connection is opened to allow each service
 	// to load any initial data that should be reported
 	InitialData()
+
+	// SetupPollingMetrics Some services need data that doesn't have a good event to hook into
+	// In those cases, we have to fall back to polling
+	SetupPollingMetrics()
 
 	// ReceiveResponse is called when a response is received for the particular metrics service
 	ReceiveResponse(*types.WebsocketResponse)
@@ -204,6 +209,7 @@ func (m *Metrics) OpenWebsocket() error {
 
 	for _, service := range m.serviceMetrics {
 		service.InitialData()
+		service.SetupPollingMetrics()
 	}
 
 	return nil
@@ -271,4 +277,46 @@ func healthcheckEndpoint(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Errorf("Error writing healthcheck response %s\n", err.Error())
 	}
+}
+
+func connectionCountHelper(resp *types.WebsocketResponse, connectionCount *prometheus.GaugeVec) {
+	connections := &rpc.GetConnectionsResponse{}
+	err := json.Unmarshal(resp.Data, connections)
+	if err != nil {
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
+		return
+	}
+
+	fullNode := 0.0
+	harvester := 0.0
+	farmer := 0.0
+	timelord := 0.0
+	introducer := 0.0
+	wallet := 0.0
+
+	if conns, hasConns := connections.Connections.Get(); hasConns {
+		for _, connection := range conns {
+			switch connection.Type {
+			case types.NodeTypeFullNode:
+				fullNode++
+			case types.NodeTypeHarvester:
+				harvester++
+			case types.NodeTypeFarmer:
+				farmer++
+			case types.NodeTypeTimelord:
+				timelord++
+			case types.NodeTypeIntroducer:
+				introducer++
+			case types.NodeTypeWallet:
+				wallet++
+			}
+		}
+	}
+
+	connectionCount.WithLabelValues("full_node").Set(fullNode)
+	connectionCount.WithLabelValues("harvester").Set(harvester)
+	connectionCount.WithLabelValues("farmer").Set(farmer)
+	connectionCount.WithLabelValues("timelord").Set(timelord)
+	connectionCount.WithLabelValues("introducer").Set(introducer)
+	connectionCount.WithLabelValues("wallet").Set(wallet)
 }

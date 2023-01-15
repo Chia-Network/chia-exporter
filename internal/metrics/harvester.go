@@ -3,6 +3,7 @@ package metrics
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/chia-network/go-chia-libs/pkg/rpc"
 	"github.com/chia-network/go-chia-libs/pkg/types"
@@ -10,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	wrappedPrometheus "github.com/chia-network/chia-exporter/internal/prometheus"
+	"github.com/chia-network/chia-exporter/internal/utils"
 )
 
 // Metrics that are based on Harvester RPC calls are in this file
@@ -18,6 +20,9 @@ import (
 type HarvesterServiceMetrics struct {
 	// Holds a reference to the main metrics container this is a part of
 	metrics *Metrics
+
+	// Connection Metrics
+	connectionCount *prometheus.GaugeVec
 
 	// Keep a local copy of the plot count, so we can do other actions when the value changes
 	totalPlotsValue uint64
@@ -35,6 +40,9 @@ type HarvesterServiceMetrics struct {
 
 // InitMetrics sets all the metrics properties
 func (s *HarvesterServiceMetrics) InitMetrics() {
+	// Connection Metrics
+	s.connectionCount = s.metrics.newGaugeVec(chiaServiceHarvester, "connection_count", "Number of active connections for each type of peer", []string{"node_type"})
+
 	s.totalPlots = s.metrics.newGauge(chiaServiceHarvester, "total_plots", "Total number of plots on this harvester")
 	s.plotFilesize = s.metrics.newGaugeVec(chiaServiceHarvester, "plot_filesize", "Total filesize of plots on this harvester, by K size", []string{"size", "type"})
 	s.plotCount = s.metrics.newGaugeVec(chiaServiceHarvester, "plot_count", "Total count of plots on this harvester, by K size", []string{"size", "type"})
@@ -53,6 +61,16 @@ func (s *HarvesterServiceMetrics) InitialData() {
 	s.httpGetPlots()
 }
 
+// SetupPollingMetrics starts any metrics that happen on an interval
+func (s *HarvesterServiceMetrics) SetupPollingMetrics() {
+	go func() {
+		for {
+			utils.LogErr(s.metrics.client.HarvesterService.GetConnections(&rpc.GetConnectionsOptions{}))
+			time.Sleep(15 * time.Second)
+		}
+	}()
+}
+
 func (s *HarvesterServiceMetrics) httpGetPlots() {
 	// get_plots seems to sometimes not respond on websockets, so doing http request for this
 	log.Debug("Calling get_plots with http client")
@@ -67,6 +85,7 @@ func (s *HarvesterServiceMetrics) httpGetPlots() {
 
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *HarvesterServiceMetrics) Disconnected() {
+	s.connectionCount.Reset()
 	s.totalPlots.Unregister()
 	s.plotFilesize.Reset()
 	s.plotCount.Reset()
@@ -83,11 +102,18 @@ func (s *HarvesterServiceMetrics) Reconnected() {
 // ReceiveResponse handles crawler responses that are returned over the websocket
 func (s *HarvesterServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	switch resp.Command {
+	case "get_connections":
+		s.GetConnections(resp)
 	case "farming_info":
 		s.FarmingInfo(resp)
 	case "get_plots":
 		s.GetPlots(resp)
 	}
+}
+
+// GetConnections handler for get_connections events
+func (s *HarvesterServiceMetrics) GetConnections(resp *types.WebsocketResponse) {
+	connectionCountHelper(resp, s.connectionCount)
 }
 
 // FarmingInfo handles the farming_info event from the harvester

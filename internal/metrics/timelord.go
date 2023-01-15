@@ -40,6 +40,9 @@ func (s *TimelordServiceMetrics) InitialData() {
 	utils.LogErr(s.metrics.client.CrawlerService.GetPeerCounts())
 }
 
+// SetupPollingMetrics starts any metrics that happen on an interval
+func (s *TimelordServiceMetrics) SetupPollingMetrics() {}
+
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *TimelordServiceMetrics) Disconnected() {
 	s.fastestTimelord.Unregister()

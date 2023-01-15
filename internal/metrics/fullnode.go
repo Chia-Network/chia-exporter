@@ -125,6 +125,9 @@ func (s *FullNodeServiceMetrics) InitialData() {
 	}()
 }
 
+// SetupPollingMetrics starts any metrics that happen on an interval
+func (s *FullNodeServiceMetrics) SetupPollingMetrics() {}
+
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *FullNodeServiceMetrics) Disconnected() {
 	s.difficulty.Unregister()
@@ -217,45 +220,7 @@ func (s *FullNodeServiceMetrics) GetBlockchainState(resp *types.WebsocketRespons
 
 // GetConnections handler for get_connections events
 func (s *FullNodeServiceMetrics) GetConnections(resp *types.WebsocketResponse) {
-	connections := &rpc.GetConnectionsResponse{}
-	err := json.Unmarshal(resp.Data, connections)
-	if err != nil {
-		log.Errorf("Error unmarshalling: %s\n", err.Error())
-		return
-	}
-
-	fullNode := 0.0
-	harvester := 0.0
-	farmer := 0.0
-	timelord := 0.0
-	introducer := 0.0
-	wallet := 0.0
-
-	if conns, hasConns := connections.Connections.Get(); hasConns {
-		for _, connection := range conns {
-			switch connection.Type {
-			case types.NodeTypeFullNode:
-				fullNode++
-			case types.NodeTypeHarvester:
-				harvester++
-			case types.NodeTypeFarmer:
-				farmer++
-			case types.NodeTypeTimelord:
-				timelord++
-			case types.NodeTypeIntroducer:
-				introducer++
-			case types.NodeTypeWallet:
-				wallet++
-			}
-		}
-	}
-
-	s.connectionCount.WithLabelValues("full_node").Set(fullNode)
-	s.connectionCount.WithLabelValues("harvester").Set(harvester)
-	s.connectionCount.WithLabelValues("farmer").Set(farmer)
-	s.connectionCount.WithLabelValues("timelord").Set(timelord)
-	s.connectionCount.WithLabelValues("introducer").Set(introducer)
-	s.connectionCount.WithLabelValues("wallet").Set(wallet)
+	connectionCountHelper(resp, s.connectionCount)
 }
 
 // Block handler for block events

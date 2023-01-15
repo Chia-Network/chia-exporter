@@ -3,6 +3,7 @@ package metrics
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -21,6 +22,9 @@ type WalletServiceMetrics struct {
 	// Holds a reference to the main metrics container this is a part of
 	metrics *Metrics
 
+	// Connection Metrics
+	connectionCount *prometheus.GaugeVec
+
 	// WalletBalanceMetrics
 	walletSynced            *wrappedPrometheus.LazyGauge
 	confirmedBalance        *prometheus.GaugeVec
@@ -32,6 +36,9 @@ type WalletServiceMetrics struct {
 
 // InitMetrics sets all the metrics properties
 func (s *WalletServiceMetrics) InitMetrics() {
+	// Connection Metrics
+	s.connectionCount = s.metrics.newGaugeVec(chiaServiceWallet, "connection_count", "Number of active connections for each type of peer", []string{"node_type"})
+
 	// Wallet Metrics
 	s.walletSynced = s.metrics.newGauge(chiaServiceWallet, "synced", "")
 	walletLabels := []string{"fingerprint", "wallet_id", "wallet_type", "asset_id"}
@@ -49,8 +56,19 @@ func (s *WalletServiceMetrics) InitialData() {
 	utils.LogErr(s.metrics.client.WalletService.GetSyncStatus())
 }
 
+// SetupPollingMetrics starts any metrics that happen on an interval
+func (s *WalletServiceMetrics) SetupPollingMetrics() {
+	go func() {
+		for {
+			utils.LogErr(s.metrics.client.WalletService.GetConnections(&rpc.GetConnectionsOptions{}))
+			time.Sleep(15 * time.Second)
+		}
+	}()
+}
+
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *WalletServiceMetrics) Disconnected() {
+	s.connectionCount.Reset()
 	s.walletSynced.Unregister()
 	s.confirmedBalance.Reset()
 	s.spendableBalance.Reset()
@@ -67,6 +85,8 @@ func (s *WalletServiceMetrics) Reconnected() {
 // ReceiveResponse handles wallet responses that are returned over the websocket
 func (s *WalletServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	switch resp.Command {
+	case "get_connections":
+		s.GetConnections(resp)
 	case "coin_added":
 		s.CoinAdded(resp)
 	case "sync_changed":
@@ -78,6 +98,11 @@ func (s *WalletServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	case "get_wallets":
 		s.GetWallets(resp)
 	}
+}
+
+// GetConnections handler for get_connections events
+func (s *WalletServiceMetrics) GetConnections(resp *types.WebsocketResponse) {
+	connectionCountHelper(resp, s.connectionCount)
 }
 
 // CoinAdded handles coin_added events by asking for wallet balance details
