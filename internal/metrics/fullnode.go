@@ -14,7 +14,8 @@ import (
 	"github.com/chia-network/go-chia-libs/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
 
-	wrappedPrometheus "github.com/chia-network/chia-exporter/internal/prometheus"
+	wrappedPrometheus "github.com/chia-network/go-modules/pkg/prometheus"
+
 	"github.com/chia-network/chia-exporter/internal/utils"
 )
 

@@ -15,7 +15,8 @@ import (
 
 	"github.com/oschwald/maxminddb-golang"
 
-	wrappedPrometheus "github.com/chia-network/chia-exporter/internal/prometheus"
+	wrappedPrometheus "github.com/chia-network/go-modules/pkg/prometheus"
+
 	"github.com/chia-network/chia-exporter/internal/utils"
 )
 
