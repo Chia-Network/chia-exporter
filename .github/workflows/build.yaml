@@ -89,28 +89,28 @@ jobs:
             zip -r $dir.zip $dir
           done <<< "$DIRS"
 
-      - name: Get zip filenames
-        id: release-files
-        run: |
-          FILES=$(find ${{ github.workspace }}/artifacts -type f -name 'chia-exporter*.zip')
-          # Replace chars in the manner GHA expects to this ends up multiline in the next step
-          FILES="${FILES//'%'/'%25'}"
-          FILES="${FILES//$'\n'/'%0A'}"
-          FILES="${FILES//$'\r'/'%0D'}"
-          echo "FILES=$FILES" >>$GITHUB_OUTPUT
-
-      - name: Release
-        uses: softprops/action-gh-release@v0.1
-        with:
-          files: |
-            ${{ steps.release-files.outputs.FILES }}
-            artifacts/installer-chia-exporter*/*.deb
-
       - name: Get tag name
         if: startsWith(github.ref, 'refs/tags/')
         id: tag-name
         run: |
-          echo "TAG_NAME=$(echo ${{ github.ref }} | cut -d'/' -f 3)" >>$GITHUB_OUTPUT
+          TAG_NAME=$(echo ${{ github.ref }} | cut -d'/' -f 3)
+          echo "TAG_NAME=$TAG_NAME" >>$GITHUB_ENV
+          echo "TAG_NAME=$TAG_NAME" >>$GITHUB_OUTPUT
+
+      - name: Upload Release Artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          FILES=$(find ${{ github.workspace }}/artifacts -type f -name 'chia-exporter*.zip')
+          while IFS= read -r file; do
+            gh release upload \
+              $TAG_NAME \
+              $file
+          done <<< "$FILES"
+          
+          gh release upload \
+            $TAG_NAME \
+            artifacts/installer-chia-exporter*/*.deb
 
       - name: Trigger apt repo update
         run: |
