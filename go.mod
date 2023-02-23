@@ -3,7 +3,7 @@ module github.com/chia-network/chia-exporter
 go 1.18
 
 require (
-	github.com/chia-network/go-chia-libs v0.2.3
+	github.com/chia-network/go-chia-libs v0.2.4
 	github.com/chia-network/go-modules v0.0.3
 	github.com/oschwald/maxminddb-golang v1.10.0
 	github.com/prometheus/client_golang v1.14.0
@@ -29,7 +29,7 @@ require (
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
-	github.com/samber/mo v1.7.0 // indirect
+	github.com/samber/mo v1.8.0 // indirect
 	github.com/spf13/afero v1.9.3 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
