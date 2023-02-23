@@ -51,8 +51,8 @@ github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA
 github.com/cespare/xxhash/v2 v2.1.1/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/cespare/xxhash/v2 v2.1.2 h1:YRXhKfTDauu4ajMg1TPgFO5jnlC2HCbmLXMcTG5cbYE=
 github.com/cespare/xxhash/v2 v2.1.2/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
-github.com/chia-network/go-chia-libs v0.2.3 h1:quGwN6OErc2DdVxwlIZuRdQjT48HPeiZYj1QA/BXnSY=
-github.com/chia-network/go-chia-libs v0.2.3/go.mod h1:7bt3HlfUTnu5Iv5Cd5ByC5yaXgLjiKRpSxGE3Qex5GM=
+github.com/chia-network/go-chia-libs v0.2.4 h1:bN33M0+TqD2eGdzOiTgzXHkIxPSrNkDPCQ7DkCmkKfs=
+github.com/chia-network/go-chia-libs v0.2.4/go.mod h1:TIRBadIXfKDf5KRb1fBC0IE7MqHGpBO4tgx1I0aQelc=
 github.com/chia-network/go-modules v0.0.3 h1:hLYUW8Uqzt7fjTKIrIdqIfbui2Yw3NA+2El1sU4rT78=
 github.com/chia-network/go-modules v0.0.3/go.mod h1:9SHIGLdyHjZqbBxn87SUaBuHdaIolZPp68IJR8UujHE=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
@@ -233,8 +233,8 @@ github.com/prometheus/procfs v0.8.0/go.mod h1:z7EfXMXOkbkqb9IINtpCn86r/to3BnA0ua
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rogpeppe/go-internal v1.6.1 h1:/FiVV8dS/e+YqF2JvO3yXRFbBLTIuSDkuC7aBOAvL+k=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
-github.com/samber/mo v1.7.0 h1:wYI97e2+CHUvhkRGK1dl5FWpv/XDieaEYIAEJ9XVu2o=
-github.com/samber/mo v1.7.0/go.mod h1:gELW3aXN9Utq0gz969NbLMeZo6dkUW8QTohmafdFEEA=
+github.com/samber/mo v1.8.0 h1:vYjHTfg14JF9tD2NLhpoUsRi9bjyRoYwa4+do0nvbVw=
+github.com/samber/mo v1.8.0/go.mod h1:BfkrCPuYzVG3ZljnZB783WIJIGk1mcZr9c9CPf8tAxs=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
 github.com/sirupsen/logrus v1.6.0/go.mod h1:7uNnSEd1DgxDLC74fIahvMZmmYsHGZGEOFrfsX/uA88=
