@@ -21,6 +21,14 @@ import (
 
 // Metrics that are based on Full Node RPC calls are in this file
 
+// Fee data is based on the estimates here https://github.com/Chia-Network/chia-blockchain/blob/37fcafa0d31358f6ff7276a78764a0cc7ffeb030/chia/rpc/full_node_rpc_api.py#L754
+const (
+	CostSendXch = 9401710
+	CostSendCat = 36382111
+	CostTransferNFT = 74385541
+	CostTakeOffer = 721393265
+)
+
 // FullNodeServiceMetrics contains all metrics related to the full node
 type FullNodeServiceMetrics struct {
 	// Holds a reference to the main metrics container this is a part of
