@@ -253,11 +253,13 @@ func (s *FullNodeServiceMetrics) GetFeeEstimates() {
 			TargetTimes: []uint64{60, 300, 900},
 		})
 		if err != nil {
+			log.Debugf("Error getting tx estimate: %s\n", err.Error())
 			continue
 		}
 		estimates := txEstimate.Estimates.OrEmpty()
 		times := txEstimate.TargetTimes.OrEmpty()
 		if len(estimates) == 0 || len(times) == 0 || len(estimates) != len(times) {
+			log.Debugln("Unexpected TX estimate response (empty or mis-matched estimates/times)")
 			continue
 		}
 
