@@ -8,11 +8,10 @@ import (
 	"time"
 
 	"github.com/chia-network/go-chia-libs/pkg/config"
-	log "github.com/sirupsen/logrus"
-
 	"github.com/chia-network/go-chia-libs/pkg/rpc"
 	"github.com/chia-network/go-chia-libs/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 
 	wrappedPrometheus "github.com/chia-network/go-modules/pkg/prometheus"
 
@@ -20,6 +19,14 @@ import (
 )
 
 // Metrics that are based on Full Node RPC calls are in this file
+
+// Fee data is based on the estimates here https://github.com/Chia-Network/chia-blockchain/blob/37fcafa0d31358f6ff7276a78764a0cc7ffeb030/chia/rpc/full_node_rpc_api.py#L754
+const (
+	CostSendXch     = 9401710
+	CostSendCat     = 36382111
+	CostTransferNFT = 74385541
+	CostTakeOffer   = 721393265
+)
 
 // FullNodeServiceMetrics contains all metrics related to the full node
 type FullNodeServiceMetrics struct {
@@ -36,6 +43,9 @@ type FullNodeServiceMetrics struct {
 	nodeHeight          *wrappedPrometheus.LazyGauge
 	nodeHeightSynced    *wrappedPrometheus.LazyGauge
 	nodeSynced          *wrappedPrometheus.LazyGauge
+
+	// Fee Metrics
+	feeEstimates *prometheus.GaugeVec
 
 	// BlockCount Metrics
 	compactBlocks   *wrappedPrometheus.LazyGauge
@@ -80,6 +90,8 @@ func (s *FullNodeServiceMetrics) InitMetrics() {
 	s.nodeHeightSynced = s.metrics.newGauge(chiaServiceFullNode, "node_height_synced", "Current height of the node, when synced. This will register/unregister automatically depending on sync state, and should help make rate() more sane, when you don't want rate of syncing, only rate of the chain.")
 	s.nodeSynced = s.metrics.newGauge(chiaServiceFullNode, "node_synced", "Indicates whether this node is currently synced")
 
+	s.feeEstimates = s.metrics.newGaugeVec(chiaServiceFullNode, "fee_estimate", "Estimate of fee required to get a particular transaction cost in a block within a specified timeframe", []string{"type", "cost", "time"})
+
 	// BlockCount Metrics
 	s.compactBlocks = s.metrics.newGauge(chiaServiceFullNode, "compact_blocks", "Number of fully compact blocks in this node's database")
 	s.uncompactBlocks = s.metrics.newGauge(chiaServiceFullNode, "uncompact_blocks", "Number of uncompact blocks in this node's database")
@@ -116,6 +128,7 @@ func (s *FullNodeServiceMetrics) InitialData() {
 	// Ask for some initial data so we dont have to wait as long
 	utils.LogErr(s.metrics.client.FullNodeService.GetBlockchainState()) // Also calls get_connections once we get the response
 	utils.LogErr(s.metrics.client.FullNodeService.GetBlockCountMetrics())
+	s.GetFeeEstimates()
 
 	// Things that update in the background
 	go func() {
@@ -140,6 +153,8 @@ func (s *FullNodeServiceMetrics) Disconnected() {
 	s.nodeHeight.Unregister()
 	s.nodeHeightSynced.Unregister()
 	s.nodeSynced.Unregister()
+
+	s.feeEstimates.Reset()
 
 	s.compactBlocks.Unregister()
 	s.uncompactBlocks.Unregister()
@@ -173,6 +188,7 @@ func (s *FullNodeServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) 
 		s.Block(resp)
 		// Ask for block count metrics when we get a new block
 		utils.LogErr(s.metrics.client.FullNodeService.GetBlockCountMetrics())
+		go s.GetFeeEstimates()
 	case "get_connections":
 		s.GetConnections(resp)
 	case "get_block_count_metrics":
@@ -217,6 +233,44 @@ func (s *FullNodeServiceMetrics) GetBlockchainState(resp *types.WebsocketRespons
 	s.mempoolMaxTotalCost.Set(float64(state.BlockchainState.MempoolMaxTotalCost))
 	s.mempoolMinFee.WithLabelValues("5000000").Set(state.BlockchainState.MempoolMinFees.Cost5m)
 	s.maxBlockCost.Set(float64(state.BlockchainState.BlockMaxCost))
+}
+
+// GetFeeEstimates gets fee estimates for the main costs we're estimating, for 1, 5, 15 minute windows
+// We do this via http requests via async on the websocket since the fee estimate response doesn't
+// indicate which cost the estimate is for
+func (s *FullNodeServiceMetrics) GetFeeEstimates() {
+	toCheck := map[string]uint64{
+		"send-xch":   CostSendXch,
+		"send-cat":   CostSendCat,
+		"tx-nft":     CostTransferNFT,
+		"take-offer": CostTakeOffer,
+	}
+
+	for label, cost := range toCheck {
+		// Get some fee data
+		txEstimate, _, err := s.metrics.httpClient.FullNodeService.GetFeeEstimate(&rpc.GetFeeEstimateOptions{
+			Cost:        cost,
+			TargetTimes: []uint64{60, 300, 900},
+		})
+		if err != nil {
+			log.Debugf("Error getting tx estimate: %s\n", err.Error())
+			continue
+		}
+		estimates := txEstimate.Estimates.OrEmpty()
+		times := txEstimate.TargetTimes.OrEmpty()
+		if len(estimates) == 0 || len(times) == 0 || len(estimates) != len(times) {
+			log.Debugln("Unexpected TX estimate response (empty or mis-matched estimates/times)")
+			continue
+		}
+
+		for idx, estimate := range estimates {
+			targetTime := times[idx]
+			s.feeEstimates.WithLabelValues(
+				label,
+				fmt.Sprintf("%d", cost),
+				fmt.Sprintf("%d", targetTime)).Set(estimate)
+		}
+	}
 }
 
 // GetConnections handler for get_connections events
