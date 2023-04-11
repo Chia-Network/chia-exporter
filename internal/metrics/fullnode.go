@@ -128,6 +128,7 @@ func (s *FullNodeServiceMetrics) InitialData() {
 	// Ask for some initial data so we dont have to wait as long
 	utils.LogErr(s.metrics.client.FullNodeService.GetBlockchainState()) // Also calls get_connections once we get the response
 	utils.LogErr(s.metrics.client.FullNodeService.GetBlockCountMetrics())
+	s.GetFeeEstimates()
 
 	// Things that update in the background
 	go func() {
@@ -152,6 +153,8 @@ func (s *FullNodeServiceMetrics) Disconnected() {
 	s.nodeHeight.Unregister()
 	s.nodeHeightSynced.Unregister()
 	s.nodeSynced.Unregister()
+
+	s.feeEstimates.Reset()
 
 	s.compactBlocks.Unregister()
 	s.uncompactBlocks.Unregister()
