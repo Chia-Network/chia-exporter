@@ -48,6 +48,42 @@ First, install [chia-blockchain](https://github.com/Chia-Network/chia-blockchain
 
 `chia-exporter serve` will start the metrics exporter on the default port of `9914`. Metrics will be available at `<hostname>:9914/metrics`.
 
+### Running in the background
+
+To run Chia exporter in the background and have it automatically start when you boot your computer, you can create a `systemd` unit file. 
+
+```shell
+sudo nano /etc/systemd/system/chia-exporter@.service
+```
+
+The unit file should contain the following configuration. 
+
+```
+[Unit]
+Description = Chia Exporter Service
+
+[Service]
+Type = Simple
+ExecStart=/usr/local/bin/chia-exporter serve
+User=%i
+Group=%i
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Save the file and start the service. Replace `[YOUR-USERNAME]` with the username of the user and group you want running the service. 
+We assume that your username and group name are the same. 
+
+```shell
+sudo systemctl daemon-reload
+sudo systemctl start chia-exporter@[YOUR-USERNAME].service
+sudo systemctl status chia-exporter@[YOUR-USERNAME].service
+
+```
+
+The last command should show that the service is Running. 
+
 ### Configuration
 
 Configuration options can be passed using command line flags, environment variables, or a configuration file, except for `--config`, which is a CLI flag only. For a complete listing of options, run `chia-exporter --help`.
