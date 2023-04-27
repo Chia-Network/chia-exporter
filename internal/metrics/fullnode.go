@@ -43,6 +43,7 @@ type FullNodeServiceMetrics struct {
 	nodeHeight          *wrappedPrometheus.LazyGauge
 	nodeHeightSynced    *wrappedPrometheus.LazyGauge
 	nodeSynced          *wrappedPrometheus.LazyGauge
+	subSlotIters        *wrappedPrometheus.LazyGauge
 
 	// Fee Metrics
 	feeEstimates *prometheus.GaugeVec
@@ -89,6 +90,7 @@ func (s *FullNodeServiceMetrics) InitMetrics() {
 	s.nodeHeight = s.metrics.newGauge(chiaServiceFullNode, "node_height", "Current height of the node")
 	s.nodeHeightSynced = s.metrics.newGauge(chiaServiceFullNode, "node_height_synced", "Current height of the node, when synced. This will register/unregister automatically depending on sync state, and should help make rate() more sane, when you don't want rate of syncing, only rate of the chain.")
 	s.nodeSynced = s.metrics.newGauge(chiaServiceFullNode, "node_synced", "Indicates whether this node is currently synced")
+	s.subSlotIters = s.metrics.newGauge(chiaServiceFullNode, "sub_slot_iters", "Current sub slot iters")
 
 	s.feeEstimates = s.metrics.newGaugeVec(chiaServiceFullNode, "fee_estimate", "Estimate of fee required to get a particular transaction cost in a block within a specified timeframe", []string{"type", "cost", "time"})
 
@@ -153,6 +155,7 @@ func (s *FullNodeServiceMetrics) Disconnected() {
 	s.nodeHeight.Unregister()
 	s.nodeHeightSynced.Unregister()
 	s.nodeSynced.Unregister()
+	s.subSlotIters.Unregister()
 
 	s.feeEstimates.Reset()
 
@@ -212,6 +215,8 @@ func (s *FullNodeServiceMetrics) GetBlockchainState(resp *types.WebsocketRespons
 	} else {
 		s.nodeSynced.Set(0)
 	}
+
+	s.subSlotIters.Set(float64(state.BlockchainState.SubSlotIters))
 
 	if peak, hasPeak := state.BlockchainState.Peak.Get(); hasPeak {
 		s.nodeHeight.Set(float64(peak.Height))
