@@ -48,6 +48,8 @@ type Metrics struct {
 
 	// All the serviceMetrics interfaces that are registered
 	serviceMetrics map[chiaService]serviceMetrics
+
+	*CrawlerServiceMetrics
 }
 
 // NewMetrics returns a new instance of metrics
@@ -68,9 +70,11 @@ func NewMetrics(port uint16) (*Metrics, error) {
 
 	// Register each service's metrics
 
+	metrics.CrawlerServiceMetrics = &CrawlerServiceMetrics{metrics: metrics}
+
 	metrics.serviceMetrics[chiaServiceFullNode] = &FullNodeServiceMetrics{metrics: metrics}
 	metrics.serviceMetrics[chiaServiceWallet] = &WalletServiceMetrics{metrics: metrics}
-	metrics.serviceMetrics[chiaServiceCrawler] = &CrawlerServiceMetrics{metrics: metrics}
+	metrics.serviceMetrics[chiaServiceCrawler] = metrics.CrawlerServiceMetrics
 	metrics.serviceMetrics[chiaServiceTimelord] = &TimelordServiceMetrics{metrics: metrics}
 
 	// Init each service's metrics

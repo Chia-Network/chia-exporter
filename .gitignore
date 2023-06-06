@@ -1,3 +1,5 @@
 main
 bin/
 GeoLite2-*.mmdb
+*.csv
+*.json

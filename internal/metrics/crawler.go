@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"time"
 
 	"github.com/chia-network/go-chia-libs/pkg/rpc"
@@ -83,7 +84,7 @@ func (s *CrawlerServiceMetrics) initMaxmindCountryDB() error {
 // If the DB is not present, ip/ASN mapping is skipped
 func (s *CrawlerServiceMetrics) initMaxmindASNDB() error {
 	var err error
-	dbPath := viper.GetString("maxmind-asn-db-path")
+	dbPath := "GeoLite2-ASN.mmdb"
 	if dbPath == "" {
 		return nil
 	}
@@ -224,7 +225,15 @@ func (s *CrawlerServiceMetrics) ProcessIPASNMapping(ips *rpc.GetIPsAfterTimestam
 	}
 	asnCounts := map[int]*countStruct{}
 
+	ipfile, err := os.Create("ips.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer ipfile.Close()
+	ipfile.WriteString("ip\n")
+
 	for _, ip := range ips.IPs {
+		ipfile.WriteString(fmt.Sprintf("%s\n", ip))
 		asn, err := s.GetASNForIP(ip)
 		if err != nil {
 			continue
@@ -241,7 +250,16 @@ func (s *CrawlerServiceMetrics) ProcessIPASNMapping(ips *rpc.GetIPsAfterTimestam
 		asnCounts[asn.AutonomousSystemNumber].Count++
 	}
 
+	asnfile, err := os.Create("by-asn.csv")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer asnfile.Close()
+
+	asnfile.WriteString(fmt.Sprintf("\"%s\",\"%s\",\"%s\"\n", "asn", "organization", "count"))
+
 	for _, asnData := range asnCounts {
+		asnfile.WriteString(fmt.Sprintf("\"%d\",\"%s\",\"%f\"\n", asnData.ASN, asnData.Organization, asnData.Count))
 		s.asnNodeCountBuckets.WithLabelValues(fmt.Sprintf("%d", asnData.ASN), asnData.Organization).Set(asnData.Count)
 	}
 }
