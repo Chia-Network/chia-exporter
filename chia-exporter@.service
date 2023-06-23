@@ -1,0 +1,11 @@
+[Unit]
+Description = Chia Exporter Service
+
+[Service]
+Type = Simple
+ExecStart=/usr/local/bin/chia-exporter serve
+User=%i
+Group=%i
+
+[Install]
+WantedBy=multi-user.target

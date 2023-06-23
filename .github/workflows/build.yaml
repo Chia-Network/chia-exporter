@@ -57,7 +57,7 @@ jobs:
       - name: Generate .deb
         run: |
           chmod +x artifacts/chia-exporter
-          fpm -s dir -t deb --prefix /usr/local/bin --chdir artifacts -n chia-exporter -a ${{ matrix.GOARCH }} -v "${{ steps.tag-name.outputs.TAG_NAME || github.sha }}" .
+          fpm -s dir --output-type deb --prefix /usr/local/bin --chdir artifacts --name chia-exporter --architecture ${{ matrix.GOARCH }} --version "${{ steps.tag-name.outputs.TAG_NAME || github.sha }}" .
           mkdir -p installer-out
           mv *.deb installer-out/
 
@@ -109,7 +109,7 @@ jobs:
               $TAG_NAME \
               $file
           done <<< "$FILES"
-          
+
           gh release upload \
             $TAG_NAME \
             artifacts/installer-chia-exporter*/*.deb
