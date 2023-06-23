@@ -57,7 +57,15 @@ jobs:
       - name: Generate .deb
         run: |
           chmod +x artifacts/chia-exporter
-          fpm -s dir --output-type deb --prefix /usr/local/bin --chdir artifacts --name chia-exporter --architecture ${{ matrix.GOARCH }} --version "${{ steps.tag-name.outputs.TAG_NAME || github.sha }}" .
+          fpm \
+            --input-type dir \
+            --output-type deb \
+            --name chia-exporter \
+            --architecture ${{ matrix.GOARCH }} \
+            --version "${{ steps.tag-name.outputs.TAG_NAME || github.sha }}" \
+            --url "https://github.com/Chia-Network/chia-exporter" \
+            --maintainer "Chia Network Inc <hello@chia.net>" \
+            artifacts/chia-exporter=/usr/local/bin/chia-exporter chia-exporter@.service=/etc/systemd/system/chia-exporter@.service
           mkdir -p installer-out
           mv *.deb installer-out/
 
