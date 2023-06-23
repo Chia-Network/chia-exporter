@@ -69,6 +69,7 @@ jobs:
             --version "${{ steps.tag-name.outputs.TAG_NAME || github.sha }}" \
             --url "https://github.com/Chia-Network/chia-exporter" \
             --maintainer "Chia Network Inc <hello@chia.net>" \
+            --description "Chia metrics Prometheus exporter" \
             artifacts/chia-exporter=/usr/local/bin/chia-exporter chia-exporter@.service=/etc/systemd/system/chia-exporter@.service
           mkdir -p installer-out
           mv *.deb installer-out/
