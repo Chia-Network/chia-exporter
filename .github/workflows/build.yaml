@@ -17,7 +17,8 @@ jobs:
         GOOS: ["linux", "darwin", "windows"]
         GOARCH: ["amd64", "arm64"]
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Build Binary
         env:
