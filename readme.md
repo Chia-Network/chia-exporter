@@ -50,27 +50,9 @@ First, install [chia-blockchain](https://github.com/Chia-Network/chia-blockchain
 
 ### Running in the background
 
-To run Chia exporter in the background and have it automatically start when you boot your computer, you can create a `systemd` unit file. 
+To run Chia exporter in the background and have it automatically start when you boot your computer, you can create a `systemd` unit file. If you have installed with `apt` or from the `.deb` package, the systemd file is installed automatically and you can skip the downloading step below. 
 
-```shell
-sudo nano /etc/systemd/system/chia-exporter@.service
-```
-
-The unit file should contain the following configuration. 
-
-```
-[Unit]
-Description = Chia Exporter Service
-
-[Service]
-Type = Simple
-ExecStart=/usr/local/bin/chia-exporter serve
-User=%i
-Group=%i
-
-[Install]
-WantedBy=multi-user.target
-```
+Download [chia-exporter@.service](chia-exporter%40.service) and copy it to the `/etc/systemd/system/` folder on your machine.   
 
 Save the file and start the service. Replace `[YOUR-USERNAME]` with the username of the user and group you want running the service. 
 We assume that your username and group name are the same. 
@@ -83,6 +65,12 @@ sudo systemctl status chia-exporter@[YOUR-USERNAME].service
 ```
 
 The last command should show that the service is Running. 
+
+To start chia-exporter at boot:
+
+```shell
+sudo systemctl enable chia-exporter@[YOUR-USERNAME].service
+```
 
 ### Configuration
 
