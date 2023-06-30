@@ -11,6 +11,15 @@ import (
 )
 
 func main() {
+	/*
+	# On the crawler
+	date -d "5 days ago" "+%s"
+	chia rpc crawler get_ips_after_timestamp '{"after":1687710018,"limit":110476}' > ips.json
+
+	# Download the json, put the file in the root of this project, then run:
+	go run main.go
+	*/
+
 	ms, _ := metrics.NewMetrics(9914)
 
 	ips := &rpc.GetIPsAfterTimestampResponse{}
