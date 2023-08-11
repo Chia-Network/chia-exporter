@@ -31,10 +31,13 @@ jobs:
         with:
           images: |
             ghcr.io/${{ github.repository }}
-          # generate Docker tags based on the following events/attributes
-          # latest is only tagged if we're on the default branch
+          flavor: |
+            latest=auto
+            prefix=
+            suffix=
           tags: |
-            type=raw,value=latest,enable=${{ endsWith(github.ref, github.event.repository.default_branch) }}
+            type=raw,value=main,enable={{is_default_branch}}
+            type=semver,pattern={{version}},enable=${{  }}
             type=sha,format=long
 
       - name: Build Docker Container
