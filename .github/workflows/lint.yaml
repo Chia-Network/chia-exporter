@@ -9,6 +9,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container: golang:1
+    env:
+      GOFLAGS: "-buildvcs=false"
     steps:
       - uses: actions/checkout@v3
       - name: Test
