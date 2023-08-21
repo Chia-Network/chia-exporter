@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/chia-network/go-chia-libs/pkg/protocols"
 	"github.com/chia-network/go-chia-libs/pkg/rpc"
 	"github.com/chia-network/go-chia-libs/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
@@ -44,9 +45,10 @@ func (s *HarvesterServiceMetrics) InitMetrics() {
 	// Connection Metrics
 	s.connectionCount = s.metrics.newGaugeVec(chiaServiceHarvester, "connection_count", "Number of active connections for each type of peer", []string{"node_type"})
 
+	plotLabels := []string{"size", "type", "compression"}
 	s.totalPlots = s.metrics.newGauge(chiaServiceHarvester, "total_plots", "Total number of plots on this harvester")
-	s.plotFilesize = s.metrics.newGaugeVec(chiaServiceHarvester, "plot_filesize", "Total filesize of plots on this harvester, by K size", []string{"size", "type"})
-	s.plotCount = s.metrics.newGaugeVec(chiaServiceHarvester, "plot_count", "Total count of plots on this harvester, by K size", []string{"size", "type"})
+	s.plotFilesize = s.metrics.newGaugeVec(chiaServiceHarvester, "plot_filesize", "Total filesize of plots on this harvester, by K size", plotLabels)
+	s.plotCount = s.metrics.newGaugeVec(chiaServiceHarvester, "plot_count", "Total count of plots on this harvester, by K size", plotLabels)
 
 	s.totalFoundProofs = s.metrics.newCounter(chiaServiceHarvester, "total_found_proofs", "Counter of total found proofs since the exporter started")
 	s.lastFoundProofs = s.metrics.newGauge(chiaServiceHarvester, "last_found_proofs", "Number of proofs found for the last farmer_info event")
@@ -155,55 +157,79 @@ func (s *HarvesterServiceMetrics) GetPlots(resp *types.WebsocketResponse) {
 	s.ProcessGetPlots(plots)
 }
 
+// PlotType is the type of plot (og or pool)
+type PlotType uint8
+
+const (
+	// PlotTypeOg is the original plot format, no plotNFT
+	PlotTypeOg = PlotType(0)
+	// PlotTypePool is the new plotNFT plot format
+	PlotTypePool = PlotType(1)
+)
+
 // ProcessGetPlots processes the `GetPlotsResponse` from get_plots so that we can use this with websockets or HTTP RPC requests
 func (s *HarvesterServiceMetrics) ProcessGetPlots(plots *rpc.HarvesterGetPlotsResponse) {
-	// First, iterate through all the plots to get totals for each ksize
-	type plotType uint8
-	plotTypeOg := plotType(0)
-	plotTypePool := plotType(1)
-
-	plotSize := map[uint8]map[plotType]uint64{}
-	plotCount := map[uint8]map[plotType]uint64{}
-
-	for _, plot := range plots.Plots.OrEmpty() {
-		kSize := plot.Size
-
-		if _, ok := plotSize[kSize]; !ok {
-			plotSize[kSize] = map[plotType]uint64{
-				plotTypeOg:   0,
-				plotTypePool: 0,
-			}
-		}
-
-		if _, ok := plotCount[kSize]; !ok {
-			plotCount[kSize] = map[plotType]uint64{
-				plotTypeOg:   0,
-				plotTypePool: 0,
-			}
-		}
-
-		if plot.PoolContractPuzzleHash.IsPresent() {
-			plotSize[kSize][plotTypePool] += plot.FileSize
-			plotCount[kSize][plotTypePool]++
-		} else {
-			plotSize[kSize][plotTypeOg] += plot.FileSize
-			plotCount[kSize][plotTypeOg]++
-		}
-	}
+	plotSize, plotCount := PlotSizeCountHelper(plots.Plots.OrEmpty())
 
 	// Now we can set the gauges with the calculated total values
-	for kSize, fileSizes := range plotSize {
-		s.plotFilesize.WithLabelValues(fmt.Sprintf("%d", kSize), "og").Set(float64(fileSizes[plotTypeOg]))
-		s.plotFilesize.WithLabelValues(fmt.Sprintf("%d", kSize), "pool").Set(float64(fileSizes[plotTypePool]))
+	// Labels: "size", "type", "compression"
+	for kSize, cLevels := range plotSize {
+		for cLevel, fileSizes := range cLevels {
+			s.plotFilesize.WithLabelValues(fmt.Sprintf("%d", kSize), "og", fmt.Sprintf("%d", cLevel)).Set(float64(fileSizes[PlotTypeOg]))
+			s.plotFilesize.WithLabelValues(fmt.Sprintf("%d", kSize), "pool", fmt.Sprintf("%d", cLevel)).Set(float64(fileSizes[PlotTypePool]))
+		}
 	}
 
-	for kSize, plotCountByType := range plotCount {
-		s.plotCount.WithLabelValues(fmt.Sprintf("%d", kSize), "og").Set(float64(plotCountByType[plotTypeOg]))
-		s.plotCount.WithLabelValues(fmt.Sprintf("%d", kSize), "pool").Set(float64(plotCountByType[plotTypePool]))
+	for kSize, cLevelsByType := range plotCount {
+		for cLevel, plotCountByType := range cLevelsByType {
+			s.plotCount.WithLabelValues(fmt.Sprintf("%d", kSize), "og", fmt.Sprintf("%d", cLevel)).Set(float64(plotCountByType[PlotTypeOg]))
+			s.plotCount.WithLabelValues(fmt.Sprintf("%d", kSize), "pool", fmt.Sprintf("%d", cLevel)).Set(float64(plotCountByType[PlotTypePool]))
+		}
 	}
 
 	totalPlotCount := len(plots.Plots.OrEmpty())
 	s.totalPlots.Set(float64(totalPlotCount))
 
 	s.totalPlotsValue = uint64(totalPlotCount)
+}
+
+// PlotSizeCountHelper returns information about plot sizes and counts for the given set of plots
+// Return is (plotSize, plotCount)
+func PlotSizeCountHelper(plots []protocols.Plot) (map[uint8]map[uint8]map[PlotType]uint64, map[uint8]map[uint8]map[PlotType]uint64) {
+	// First, iterate through all the plots to get totals for each ksize
+	//          map[ksize]map[clevel]map[PlotType]uint64
+	plotSize := map[uint8]map[uint8]map[PlotType]uint64{}
+	plotCount := map[uint8]map[uint8]map[PlotType]uint64{}
+
+	for _, plot := range plots {
+		cLevel := plot.CompressionLevel.OrElse(uint8(0))
+		kSize := plot.Size
+
+		if _, ok := plotSize[kSize]; !ok {
+			// It's safe to assume that if plotSize isn't set, plotCount isn't either, since they are created together
+			plotSize[kSize] = map[uint8]map[PlotType]uint64{}
+			plotCount[kSize] = map[uint8]map[PlotType]uint64{}
+		}
+
+		if _, ok := plotSize[kSize][cLevel]; !ok {
+			plotSize[kSize][cLevel] = map[PlotType]uint64{
+				PlotTypeOg:   0,
+				PlotTypePool: 0,
+			}
+			plotCount[kSize][cLevel] = map[PlotType]uint64{
+				PlotTypeOg:   0,
+				PlotTypePool: 0,
+			}
+		}
+
+		if plot.PoolContractPuzzleHash.IsPresent() {
+			plotSize[kSize][cLevel][PlotTypePool] += plot.FileSize
+			plotCount[kSize][cLevel][PlotTypePool]++
+		} else {
+			plotSize[kSize][cLevel][PlotTypeOg] += plot.FileSize
+			plotCount[kSize][cLevel][PlotTypeOg]++
+		}
+	}
+
+	return plotSize, plotCount
 }

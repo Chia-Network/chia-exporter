@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/chia-network/go-chia-libs/pkg/rpc"
@@ -31,6 +32,10 @@ type FarmerServiceMetrics struct {
 
 	// Proof Metrics
 	proofsFound *wrappedPrometheus.LazyCounter
+
+	// Remote Harvester Plot Counts
+	plotFilesize *prometheus.GaugeVec
+	plotCount    *prometheus.GaugeVec
 }
 
 // InitMetrics sets all the metrics properties
@@ -46,6 +51,11 @@ func (s *FarmerServiceMetrics) InitMetrics() {
 
 	// Proof Metrics
 	s.proofsFound = s.metrics.newCounter(chiaServiceFarmer, "proofs_found", "Number of proofs found since the exporter has been running")
+
+	// Remote harvester plot counts
+	plotLabels := []string{"host", "size", "type", "compression"}
+	s.plotFilesize = s.metrics.newGaugeVec(chiaServiceFarmer, "plot_filesize", "Filesize of plots separated by harvester", plotLabels)
+	s.plotCount = s.metrics.newGaugeVec(chiaServiceFarmer, "plot_count", "Number of plots separated by harvester", plotLabels)
 }
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with current/initial data
@@ -86,6 +96,31 @@ func (s *FarmerServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 // GetConnections handler for get_connections events
 func (s *FarmerServiceMetrics) GetConnections(resp *types.WebsocketResponse) {
 	connectionCountHelper(resp, s.connectionCount)
+	harvesters, _, err := s.metrics.httpClient.FarmerService.GetHarvesters(&rpc.FarmerGetHarvestersOptions{})
+	if err != nil {
+		log.Errorf("farmer: Error getting harvesters: %s\n", err.Error())
+		return
+	}
+
+	for _, harvester := range harvesters.Harvesters {
+		plotSize, plotCount := PlotSizeCountHelper(harvester.Plots)
+
+		// Now we can set the gauges with the calculated total values
+		// Labels: "host", "size", "type", "compression"
+		for kSize, cLevels := range plotSize {
+			for cLevel, fileSizes := range cLevels {
+				s.plotFilesize.WithLabelValues(harvester.Connection.Host, fmt.Sprintf("%d", kSize), "og", fmt.Sprintf("%d", cLevel)).Set(float64(fileSizes[PlotTypeOg]))
+				s.plotFilesize.WithLabelValues(harvester.Connection.Host, fmt.Sprintf("%d", kSize), "pool", fmt.Sprintf("%d", cLevel)).Set(float64(fileSizes[PlotTypePool]))
+			}
+		}
+
+		for kSize, cLevelsByType := range plotCount {
+			for cLevel, plotCountByType := range cLevelsByType {
+				s.plotCount.WithLabelValues(harvester.Connection.Host, fmt.Sprintf("%d", kSize), "og", fmt.Sprintf("%d", cLevel)).Set(float64(plotCountByType[PlotTypeOg]))
+				s.plotCount.WithLabelValues(harvester.Connection.Host, fmt.Sprintf("%d", kSize), "pool", fmt.Sprintf("%d", cLevel)).Set(float64(plotCountByType[PlotTypePool]))
+			}
+		}
+	}
 }
 
 // SubmittedPartial handles a received submitted_partial event
