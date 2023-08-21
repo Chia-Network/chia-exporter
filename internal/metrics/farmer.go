@@ -88,6 +88,11 @@ func (s *FarmerServiceMetrics) SetupPollingMetrics() {}
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *FarmerServiceMetrics) Disconnected() {
 	s.connectionCount.Reset()
+	s.plotFilesize.Reset()
+	s.plotCount.Reset()
+	s.lastFoundProofs.Reset()
+	s.lastEligiblePlots.Reset()
+	s.lastLookupTime.Reset()
 }
 
 // Reconnected is called when the service is reconnected after the websocket was disconnected
@@ -123,6 +128,10 @@ func (s *FarmerServiceMetrics) GetConnections(resp *types.WebsocketResponse) {
 		log.Errorf("farmer: Error getting harvesters: %s\n", err.Error())
 		return
 	}
+
+	// Must be reset prior to setting new values in case all of a particular type, k-size, or c level are gone
+	s.plotFilesize.Reset()
+	s.plotCount.Reset()
 
 	for _, harvester := range harvesters.Harvesters {
 		// keep track of the node ID to host mapping
@@ -166,7 +175,7 @@ func (s *FarmerServiceMetrics) NewFarmingInfo(resp *types.WebsocketResponse) {
 	nodeID := info.FarmingInfo.NodeID
 	hostname, foundHostname := s.nodeIDToHostname[nodeID]
 	if !foundHostname || s.totalPlotsValue[nodeID] != uint64(info.FarmingInfo.TotalPlots) {
-		log.Debugf("Missing node ID to host mapping or plot count doesn't match. Refreshing harvester info. New Plot Count: %d | Previous Plot Count: %d\n", info.FarmingInfo.TotalPlots, s.totalPlotsValue)
+		log.Debugf("Missing node ID to host mapping or plot count doesn't match. Refreshing harvester info. New Plot Count: %d | Previous Plot Count: %d\n", info.FarmingInfo.TotalPlots, s.totalPlotsValue[nodeID])
 		// When plot counts change, we have to refresh information about the plots
 		utils.LogErr(s.metrics.client.FarmerService.GetConnections(&rpc.GetConnectionsOptions{}))
 	}
