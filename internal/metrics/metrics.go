@@ -92,7 +92,7 @@ func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
 	metrics.httpClient, err = rpc.NewClient(rpc.ConnectionModeHTTP, rpc.WithAutoConfig(), rpc.WithBaseURL(&url.URL{
 		Scheme: "https",
 		Host:   viper.GetString("hostname"),
-	}))
+	}), rpc.WithTimeout(viper.GetDuration("rpc-timeout")))
 	if err != nil {
 		// For now, http client is optional
 		// Sometimes this fails with outdated config.yaml files that don't have the crawler/seeder section present
