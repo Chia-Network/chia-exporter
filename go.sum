@@ -45,6 +45,8 @@ github.com/cespare/xxhash/v2 v2.2.0 h1:DC2CZ1Ep5Y4k3ZQ899DldepgrayRUGE6BBZ/cd9Cj
 github.com/cespare/xxhash/v2 v2.2.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/chia-network/go-chia-libs v0.5.0 h1:j4skq96iOIawGWqXebk87HBYJlUZbBIhh9zr/LLGxKs=
 github.com/chia-network/go-chia-libs v0.5.0/go.mod h1:cLTizmlrAoyfL+PGLS5G7MT+Q288wtUHCneIDrIp7Mc=
+github.com/chia-network/go-chia-libs v0.5.1-0.20230825140606-8feddd06bef5 h1:+fjy4QYfnpUULBKh5MrQ8v15FV87Afbr0aRkSsoIbEc=
+github.com/chia-network/go-chia-libs v0.5.1-0.20230825140606-8feddd06bef5/go.mod h1:cLTizmlrAoyfL+PGLS5G7MT+Q288wtUHCneIDrIp7Mc=
 github.com/chia-network/go-modules v0.0.4 h1:XlCcuT4j1krLvsFT1Y49Un5xORwcTc8jjE4SHih7OTI=
 github.com/chia-network/go-modules v0.0.4/go.mod h1:JP8mG/9ieE76VcGIbzD5G3/4YDmvNhRryiQwp8GQr1U=
 github.com/chzyer/logex v1.1.10/go.mod h1:+Ywpsq7O8HXn0nuIou7OrIPyXbp3wmkHB+jjWRnGsAI=
