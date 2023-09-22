@@ -76,6 +76,9 @@ type FullNodeServiceMetrics struct {
 	peersDat          *wrappedPrometheus.LazyGauge
 	heightToHash      *wrappedPrometheus.LazyGauge
 	subEpochSummaries *wrappedPrometheus.LazyGauge
+
+	// Debug Metric
+	debug *prometheus.GaugeVec
 }
 
 // InitMetrics sets all the metrics properties
@@ -122,6 +125,9 @@ func (s *FullNodeServiceMetrics) InitMetrics() {
 	s.peersDat = s.metrics.newGauge(chiaServiceFullNode, "peers_dat_filesize", "Size of peers.dat file")
 	s.heightToHash = s.metrics.newGauge(chiaServiceFullNode, "height_to_hash_filesize", "Size of height_to_hash file")
 	s.subEpochSummaries = s.metrics.newGauge(chiaServiceFullNode, "sub_epoch_summaries_filesize", "Size of sub_epoch_summaries file")
+
+	// Debug Metric
+	s.debug = s.metrics.newGaugeVec(chiaServiceFullNode, "debug_metrics", "random debugging metrics distinguished by labels", []string{"key"})
 }
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with
@@ -198,6 +204,8 @@ func (s *FullNodeServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) 
 		s.GetBlockCountMetrics(resp)
 	case "signage_point":
 		s.SignagePoint(resp)
+	case "debug":
+		s.Debug(resp)
 	}
 }
 
@@ -332,6 +340,22 @@ func (s *FullNodeServiceMetrics) SignagePoint(resp *types.WebsocketResponse) {
 	s.totalSignagePoints.Inc()
 	s.signagePointsSubSlot.Set(float64(64))
 	s.currentSignagePoint.Set(float64(signagePoint.BroadcastFarmer.SignagePointIndex))
+}
+
+// Debug handles debug events
+// Expects map[string]number - where number is able to be parsed into a float64 type
+// Assigns the key (string) as the "key" label on the metric, and passes the value straight through
+func (s *FullNodeServiceMetrics) Debug(resp *types.WebsocketResponse) {
+	debugMetrics := map[string]float64{}
+	err := json.Unmarshal(resp.Data, &debugMetrics)
+	if err != nil {
+		log.Errorf("Error unmarshalling debugMetrics: %s\n", err.Error())
+		return
+	}
+
+	for key, value := range debugMetrics {
+		s.debug.WithLabelValues(key).Set(value)
+	}
 }
 
 // RefreshFileSizes periodically checks how large files related to the full node are
