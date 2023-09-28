@@ -320,3 +320,23 @@ func connectionCountHelper(resp *types.WebsocketResponse, connectionCount *prome
 	connectionCount.WithLabelValues("introducer").Set(introducer)
 	connectionCount.WithLabelValues("wallet").Set(wallet)
 }
+
+type debugEvent struct {
+	Data map[string]float64 `json:"data"`
+}
+
+// debugHelper handles debug events
+// Expects map[string]number - where number is able to be parsed into a float64 type
+// Assigns the key (string) as the "key" label on the metric, and passes the value straight through
+func debugHelper(resp *types.WebsocketResponse, debugGaugeVec *prometheus.GaugeVec) {
+	debugMetrics := debugEvent{}
+	err := json.Unmarshal(resp.Data, &debugMetrics)
+	if err != nil {
+		log.Errorf("Error unmarshalling debugMetrics: %s\n", err.Error())
+		return
+	}
+
+	for key, value := range debugMetrics.Data {
+		debugGaugeVec.WithLabelValues(key).Set(value)
+	}
+}

@@ -205,7 +205,7 @@ func (s *FullNodeServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) 
 	case "signage_point":
 		s.SignagePoint(resp)
 	case "debug":
-		s.Debug(resp)
+		debugHelper(resp, s.debug)
 	}
 }
 
@@ -340,25 +340,6 @@ func (s *FullNodeServiceMetrics) SignagePoint(resp *types.WebsocketResponse) {
 	s.totalSignagePoints.Inc()
 	s.signagePointsSubSlot.Set(float64(64))
 	s.currentSignagePoint.Set(float64(signagePoint.BroadcastFarmer.SignagePointIndex))
-}
-
-// Debug handles debug events
-// Expects map[string]number - where number is able to be parsed into a float64 type
-// Assigns the key (string) as the "key" label on the metric, and passes the value straight through
-func (s *FullNodeServiceMetrics) Debug(resp *types.WebsocketResponse) {
-	type debugEvent struct {
-		Data map[string]float64 `json:"data"`
-	}
-	debugMetrics := debugEvent{}
-	err := json.Unmarshal(resp.Data, &debugMetrics)
-	if err != nil {
-		log.Errorf("Error unmarshalling debugMetrics: %s\n", err.Error())
-		return
-	}
-
-	for key, value := range debugMetrics.Data {
-		s.debug.WithLabelValues(key).Set(value)
-	}
 }
 
 // RefreshFileSizes periodically checks how large files related to the full node are
