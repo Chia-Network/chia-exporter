@@ -38,6 +38,9 @@ type HarvesterServiceMetrics struct {
 	totalEligiblePlots *wrappedPrometheus.LazyCounter
 	lastEligiblePlots  *wrappedPrometheus.LazyGauge
 	lastLookupTime     *wrappedPrometheus.LazyGauge
+
+	// Debug Metric
+	debug *prometheus.GaugeVec
 }
 
 // InitMetrics sets all the metrics properties
@@ -57,6 +60,9 @@ func (s *HarvesterServiceMetrics) InitMetrics() {
 	s.lastEligiblePlots = s.metrics.newGauge(chiaServiceHarvester, "last_eligible_plots", "Number of eligible plots for the last farmer_info event")
 
 	s.lastLookupTime = s.metrics.newGauge(chiaServiceHarvester, "last_lookup_time", "Lookup time for the last farmer_info event")
+
+	// Debug Metric
+	s.debug = s.metrics.newGaugeVec(chiaServiceHarvester, "debug_metrics", "random debugging metrics distinguished by labels", []string{"key"})
 }
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with current/initial data
@@ -111,6 +117,8 @@ func (s *HarvesterServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse)
 		s.FarmingInfo(resp)
 	case "get_plots":
 		s.GetPlots(resp)
+	case "debug":
+		debugHelper(resp, s.debug)
 	}
 }
 

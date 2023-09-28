@@ -47,6 +47,9 @@ type FarmerServiceMetrics struct {
 	totalEligiblePlots *prometheus.CounterVec
 	lastEligiblePlots  *prometheus.GaugeVec
 	lastLookupTime     *prometheus.GaugeVec
+
+	// Debug Metric
+	debug *prometheus.GaugeVec
 }
 
 // InitMetrics sets all the metrics properties
@@ -75,6 +78,9 @@ func (s *FarmerServiceMetrics) InitMetrics() {
 	s.totalEligiblePlots = s.metrics.newCounterVec(chiaServiceFarmer, "total_eligible_plots", "Counter of total eligible plots since the exporter started", []string{"host", "node_id"})
 	s.lastEligiblePlots = s.metrics.newGaugeVec(chiaServiceFarmer, "last_eligible_plots", "Number of eligible plots for the last farmer_info event", []string{"host", "node_id"})
 	s.lastLookupTime = s.metrics.newGaugeVec(chiaServiceFarmer, "last_lookup_time", "Lookup time for the last farmer_info event", []string{"host", "node_id"})
+
+	// Debug Metric
+	s.debug = s.metrics.newGaugeVec(chiaServiceFarmer, "debug_metrics", "random debugging metrics distinguished by labels", []string{"key"})
 }
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with current/initial data
@@ -117,6 +123,8 @@ func (s *FarmerServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 		fallthrough
 	case "close_connection":
 		utils.LogErr(s.metrics.client.FarmerService.GetConnections(&rpc.GetConnectionsOptions{}))
+	case "debug":
+		debugHelper(resp, s.debug)
 	}
 }
 
