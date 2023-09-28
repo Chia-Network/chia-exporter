@@ -37,6 +37,9 @@ type CrawlerServiceMetrics struct {
 	ipv6Nodes5Days          *wrappedPrometheus.LazyGauge
 	versionBuckets          *prometheus.GaugeVec
 	countryNodeCountBuckets *prometheus.GaugeVec
+
+	// Debug Metric
+	debug *prometheus.GaugeVec
 }
 
 // InitMetrics sets all the metrics properties
@@ -48,6 +51,9 @@ func (s *CrawlerServiceMetrics) InitMetrics() {
 	s.ipv6Nodes5Days = s.metrics.newGauge(chiaServiceCrawler, "ipv6_nodes_5_days", "Total number of IPv6 nodes that have been gossiped around the network with a timestamp in the last 5 days. The crawler did not necessarily connect to all of these peers itself.")
 	s.versionBuckets = s.metrics.newGaugeVec(chiaServiceCrawler, "peer_version", "Number of peers for each version. Only peers the crawler was able to connect to are included here.", []string{"version"})
 	s.countryNodeCountBuckets = s.metrics.newGaugeVec(chiaServiceCrawler, "country_node_count", "Number of peers gossiped in the last 5 days from each country.", []string{"country", "country_display"})
+
+	// Debug Metric
+	s.debug = s.metrics.newGaugeVec(chiaServiceCrawler, "debug_metrics", "random debugging metrics distinguished by labels", []string{"key"})
 
 	err := s.initMaxmindDB()
 	if err != nil {
@@ -104,6 +110,8 @@ func (s *CrawlerServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 		fallthrough
 	case "crawl_batch_completed":
 		s.GetPeerCounts(resp)
+	case "debug":
+		debugHelper(resp, s.debug)
 	}
 }
 

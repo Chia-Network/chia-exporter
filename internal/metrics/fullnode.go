@@ -127,7 +127,7 @@ func (s *FullNodeServiceMetrics) InitMetrics() {
 	s.subEpochSummaries = s.metrics.newGauge(chiaServiceFullNode, "sub_epoch_summaries_filesize", "Size of sub_epoch_summaries file")
 
 	// Debug Metric
-	s.debug = s.metrics.newGaugeVec(chiaServiceFullNode, "debug_metrics", "random debugging metrics distinguished by labels", []string{"key"})
+	s.debug = s.metrics.newGaugeVec(chiaServiceFullNode, "debug_metrics", "misc debugging metrics distinguished by labels", []string{"key"})
 }
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with

@@ -25,6 +25,9 @@ type TimelordServiceMetrics struct {
 	slowTimelord       *wrappedPrometheus.LazyCounter
 	estimatedIPS       *wrappedPrometheus.LazyGauge
 	compactProofsFound *prometheus.CounterVec
+
+	// Debug Metric
+	debug *prometheus.GaugeVec
 }
 
 // InitMetrics sets all the metrics properties
@@ -33,6 +36,9 @@ func (s *TimelordServiceMetrics) InitMetrics() {
 	s.slowTimelord = s.metrics.newCounter(chiaServiceTimelord, "slow_timelord", "Counter for how many times this timelord has NOT been the fastest since the exporter has been running")
 	s.estimatedIPS = s.metrics.newGauge(chiaServiceTimelord, "estimated_ips", "Current estimated IPS. Updated every time a new PoT Challenge is complete")
 	s.compactProofsFound = s.metrics.newCounterVec(chiaServiceTimelord, "compact_proofs_completed", "Count of the number of compact proofs by proof type since the exporter was started", []string{"vdf_field"})
+
+	// Debug Metric
+	s.debug = s.metrics.newGaugeVec(chiaServiceTimelord, "debug_metrics", "random debugging metrics distinguished by labels", []string{"key"})
 }
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with
@@ -69,6 +75,8 @@ func (s *TimelordServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) 
 		s.SkippingPeak(resp)
 	case "new_peak":
 		s.NewPeak(resp)
+	case "debug":
+		debugHelper(resp, s.debug)
 	}
 }
 

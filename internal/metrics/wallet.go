@@ -33,6 +33,9 @@ type WalletServiceMetrics struct {
 	maxSendAmount           *prometheus.GaugeVec
 	pendingCoinRemovalCount *prometheus.GaugeVec
 	unspentCoinCount        *prometheus.GaugeVec
+
+	// Debug Metric
+	debug *prometheus.GaugeVec
 }
 
 // InitMetrics sets all the metrics properties
@@ -48,6 +51,9 @@ func (s *WalletServiceMetrics) InitMetrics() {
 	s.maxSendAmount = s.metrics.newGaugeVec(chiaServiceWallet, "max_send_amount", "", walletLabels)
 	s.pendingCoinRemovalCount = s.metrics.newGaugeVec(chiaServiceWallet, "pending_coin_removal_count", "", walletLabels)
 	s.unspentCoinCount = s.metrics.newGaugeVec(chiaServiceWallet, "unspent_coin_count", "", walletLabels)
+
+	// Debug Metric
+	s.debug = s.metrics.newGaugeVec(chiaServiceWallet, "debug_metrics", "misc debugging metrics distinguished by labels", []string{"key"})
 }
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with
@@ -98,6 +104,8 @@ func (s *WalletServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 		s.GetWalletBalance(resp)
 	case "get_wallets":
 		s.GetWallets(resp)
+	case "debug":
+		debugHelper(resp, s.debug)
 	}
 }
 
