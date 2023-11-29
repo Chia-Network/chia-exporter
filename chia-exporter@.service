@@ -2,7 +2,7 @@
 Description = Chia Exporter Service
 
 [Service]
-Type = Simple
+Type = simple
 ExecStart=/usr/local/bin/chia-exporter serve
 User=%i
 Group=%i
