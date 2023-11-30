@@ -137,6 +137,7 @@ func (s *FarmerServiceMetrics) GetConnections(resp *types.WebsocketResponse) {
 	s.GetHarvesters()
 }
 
+// GetHarvesters loads data about harvesters connected to the farmer
 func (s *FarmerServiceMetrics) GetHarvesters() {
 	if s.gettingHarvesters {
 		log.Debug("Skipping get_harvesters since another request is already in flight")
