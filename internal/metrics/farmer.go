@@ -51,7 +51,7 @@ type FarmerServiceMetrics struct {
 	// Debug Metric
 	debug *prometheus.GaugeVec
 
-	// Make sure we don't ask for harvesters again if another request is still processing
+	// Tracking certain requests to make sure only one happens at any given time
 	gettingHarvesters bool
 }
 
@@ -139,6 +139,7 @@ func (s *FarmerServiceMetrics) GetConnections(resp *types.WebsocketResponse) {
 
 func (s *FarmerServiceMetrics) GetHarvesters() {
 	if s.gettingHarvesters {
+		log.Debug("Skipping get_harvesters since another request is already in flight")
 		return
 	}
 	s.gettingHarvesters = true
