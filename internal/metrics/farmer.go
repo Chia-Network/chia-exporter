@@ -50,6 +50,9 @@ type FarmerServiceMetrics struct {
 
 	// Debug Metric
 	debug *prometheus.GaugeVec
+
+	// Make sure we don't ask for harvesters again if another request is still processing
+	gettingHarvesters bool
 }
 
 // InitMetrics sets all the metrics properties
@@ -131,6 +134,18 @@ func (s *FarmerServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 // GetConnections handler for get_connections events
 func (s *FarmerServiceMetrics) GetConnections(resp *types.WebsocketResponse) {
 	connectionCountHelper(resp, s.connectionCount)
+	s.GetHarvesters()
+}
+
+func (s *FarmerServiceMetrics) GetHarvesters() {
+	if s.gettingHarvesters {
+		return
+	}
+	s.gettingHarvesters = true
+	defer func() {
+		s.gettingHarvesters = false
+	}()
+
 	harvesters, _, err := s.metrics.httpClient.FarmerService.GetHarvesters(&rpc.FarmerGetHarvestersOptions{})
 	if err != nil {
 		log.Errorf("farmer: Error getting harvesters: %s\n", err.Error())
