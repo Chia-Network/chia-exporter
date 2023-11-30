@@ -41,6 +41,9 @@ type HarvesterServiceMetrics struct {
 
 	// Debug Metric
 	debug *prometheus.GaugeVec
+
+	// Tracking certain requests to make sure only one happens at any given time
+	gettingPlots bool
 }
 
 // InitMetrics sets all the metrics properties
@@ -81,6 +84,15 @@ func (s *HarvesterServiceMetrics) SetupPollingMetrics() {
 }
 
 func (s *HarvesterServiceMetrics) httpGetPlots() {
+	if s.gettingPlots {
+		log.Debug("Skipping get_plots since another request is already in flight")
+		return
+	}
+	s.gettingPlots = true
+	defer func() {
+		s.gettingPlots = false
+	}()
+
 	// get_plots seems to sometimes not respond on websockets, so doing http request for this
 	log.Debug("Calling get_plots with http client")
 	plots, _, err := s.metrics.httpClient.HarvesterService.GetPlots()

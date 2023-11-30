@@ -79,6 +79,9 @@ type FullNodeServiceMetrics struct {
 
 	// Debug Metric
 	debug *prometheus.GaugeVec
+
+	// Tracking certain requests to make sure only one happens at any given time
+	gettingFeeEstimate bool
 }
 
 // InitMetrics sets all the metrics properties
@@ -252,6 +255,15 @@ func (s *FullNodeServiceMetrics) GetBlockchainState(resp *types.WebsocketRespons
 // We do this via http requests via async on the websocket since the fee estimate response doesn't
 // indicate which cost the estimate is for
 func (s *FullNodeServiceMetrics) GetFeeEstimates() {
+	if s.gettingFeeEstimate {
+		log.Debug("Skipping get_fee_estimate since another request is already in flight")
+		return
+	}
+	s.gettingFeeEstimate = true
+	defer func() {
+		s.gettingFeeEstimate = false
+	}()
+
 	toCheck := map[string]uint64{
 		"send-xch":   CostSendXch,
 		"send-cat":   CostSendCat,
