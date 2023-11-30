@@ -29,11 +29,12 @@ func Execute() {
 
 func init() {
 	var (
-		hostname       string
-		metricsPort    int
-		maxmindDBPath  string
-		logLevel       string
-		requestTimeout time.Duration
+		hostname                          string
+		metricsPort                       int
+		maxmindDBPath                     string
+		logLevel                          string
+		requestTimeout                    time.Duration
+		disableCentralHarvesterCollection bool
 	)
 
 	cobra.OnInitialize(initConfig)
@@ -44,12 +45,14 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&maxmindDBPath, "maxmind-db-path", "", "Path to the maxmind database file")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "How verbose the logs should be. panic, fatal, error, warn, info, debug, trace")
 	rootCmd.PersistentFlags().DurationVar(&requestTimeout, "rpc-timeout", 10*time.Second, "How long RPC requests will wait before timing out")
+	rootCmd.PersistentFlags().BoolVar(&disableCentralHarvesterCollection, "disable-central-harvester-collection", false, "Disables collection of harvester information via the farmer. Useful for very large farms where this request is very expensive, or cases where chia-exporter is already installed on all harvesters")
 
 	cobra.CheckErr(viper.BindPFlag("hostname", rootCmd.PersistentFlags().Lookup("hostname")))
 	cobra.CheckErr(viper.BindPFlag("metrics-port", rootCmd.PersistentFlags().Lookup("metrics-port")))
 	cobra.CheckErr(viper.BindPFlag("maxmind-db-path", rootCmd.PersistentFlags().Lookup("maxmind-db-path")))
 	cobra.CheckErr(viper.BindPFlag("log-level", rootCmd.PersistentFlags().Lookup("log-level")))
 	cobra.CheckErr(viper.BindPFlag("rpc-timeout", rootCmd.PersistentFlags().Lookup("rpc-timeout")))
+	cobra.CheckErr(viper.BindPFlag("disable-central-harvester-collection", rootCmd.PersistentFlags().Lookup("disable-central-harvester-collection")))
 }
 
 // initConfig reads in config file and ENV variables if set.

@@ -8,6 +8,7 @@ import (
 	"github.com/chia-network/go-chia-libs/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	wrappedPrometheus "github.com/chia-network/go-modules/pkg/prometheus"
 
@@ -139,6 +140,10 @@ func (s *FarmerServiceMetrics) GetConnections(resp *types.WebsocketResponse) {
 
 // GetHarvesters loads data about harvesters connected to the farmer
 func (s *FarmerServiceMetrics) GetHarvesters() {
+	if viper.GetBool("disable-central-harvester-collection") {
+		log.Debug("Skipping get_harvesters. Centralized collection disabled by config")
+		return
+	}
 	if s.gettingHarvesters {
 		log.Debug("Skipping get_harvesters since another request is already in flight")
 		return
@@ -148,6 +153,7 @@ func (s *FarmerServiceMetrics) GetHarvesters() {
 		s.gettingHarvesters = false
 	}()
 
+	log.Debug("Calling get_harvesters via the farmer")
 	harvesters, _, err := s.metrics.httpClient.FarmerService.GetHarvesters(&rpc.FarmerGetHarvestersOptions{})
 	if err != nil {
 		log.Errorf("farmer: Error getting harvesters: %s\n", err.Error())
