@@ -179,6 +179,9 @@ const (
 func (s *HarvesterServiceMetrics) ProcessGetPlots(plots *rpc.HarvesterGetPlotsResponse) {
 	plotSize, plotCount := PlotSizeCountHelper(plots.Plots.OrEmpty())
 
+	s.plotFilesize.Reset()
+	s.plotCount.Reset()
+
 	// Now we can set the gauges with the calculated total values
 	// Labels: "size", "type", "compression"
 	for kSize, cLevels := range plotSize {
