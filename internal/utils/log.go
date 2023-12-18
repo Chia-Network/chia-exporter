@@ -2,13 +2,20 @@ package utils
 
 import (
 	"os"
+	"path/filepath"
 
+	"github.com/chia-network/go-chia-libs/pkg/config"
 	log "github.com/sirupsen/logrus"
 )
 
 // LogToFile logs a message to a given file
 func LogToFile(filename, message string) error {
-	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	rootPath, err := config.GetChiaRootPath()
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(rootPath, "log", filename)
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
