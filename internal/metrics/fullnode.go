@@ -318,10 +318,10 @@ func (s *FullNodeServiceMetrics) Block(resp *types.WebsocketResponse) {
 	s.validationTime.Set(block.ValidationTime)
 
 	if viper.GetBool("log-block-times") {
-		if err = utils.LogToFile("pre-validation-time.log", fmt.Sprintf("%f", block.PreValidationTime)); err != nil {
+		if err = utils.LogToFile("pre-validation-time.log", fmt.Sprintf("%d:%f", block.Height, block.PreValidationTime)); err != nil {
 			log.Error(err.Error())
 		}
-		if err = utils.LogToFile("validation-time.log", fmt.Sprintf("%f", block.ValidationTime)); err != nil {
+		if err = utils.LogToFile("validation-time.log", fmt.Sprintf("%d:%f", block.Height, block.ValidationTime)); err != nil {
 			log.Error(err.Error())
 		}
 	}
