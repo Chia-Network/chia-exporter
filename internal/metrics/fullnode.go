@@ -316,6 +316,13 @@ func (s *FullNodeServiceMetrics) Block(resp *types.WebsocketResponse) {
 	s.preValidationTime.Set(block.PreValidationTime)
 	s.validationTime.Set(block.ValidationTime)
 
+	if err = utils.LogToFile("preValidationTime.log", fmt.Sprintf("%f", block.PreValidationTime)); err != nil {
+		log.Error(err.Error())
+	}
+	if err = utils.LogToFile("validationTime.log", fmt.Sprintf("%f", block.ValidationTime)); err != nil {
+		log.Error(err.Error())
+	}
+
 	if block.TransactionBlock {
 		s.blockCost.Set(float64(block.BlockCost.OrEmpty()))
 		s.blockFees.Set(float64(block.BlockFees.OrEmpty()))
