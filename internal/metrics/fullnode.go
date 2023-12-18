@@ -12,6 +12,7 @@ import (
 	"github.com/chia-network/go-chia-libs/pkg/types"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	wrappedPrometheus "github.com/chia-network/go-modules/pkg/prometheus"
 
@@ -315,6 +316,15 @@ func (s *FullNodeServiceMetrics) Block(resp *types.WebsocketResponse) {
 	s.kSize.WithLabelValues(fmt.Sprintf("%d", block.KSize)).Inc()
 	s.preValidationTime.Set(block.PreValidationTime)
 	s.validationTime.Set(block.ValidationTime)
+
+	if viper.GetBool("log-block-times") {
+		if err = utils.LogToFile("pre-validation-time.log", fmt.Sprintf("%d:%f", block.Height, block.PreValidationTime)); err != nil {
+			log.Error(err.Error())
+		}
+		if err = utils.LogToFile("validation-time.log", fmt.Sprintf("%d:%f", block.Height, block.ValidationTime)); err != nil {
+			log.Error(err.Error())
+		}
+	}
 
 	if block.TransactionBlock {
 		s.blockCost.Set(float64(block.BlockCost.OrEmpty()))

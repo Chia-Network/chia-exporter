@@ -2,3 +2,4 @@ main
 bin/
 GeoLite2-*.mmdb
 .idea/*
+*.log
