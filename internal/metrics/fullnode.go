@@ -313,6 +313,10 @@ func (s *FullNodeServiceMetrics) Block(resp *types.WebsocketResponse) {
 		return
 	}
 
+	if block.ForkHeight != 0 {
+		log.Infof("Fork height is: %d, Block height is %d, Reorg depth is: %d\n", block.ForkHeight, block.Height, block.Height - block.ForkHeight)
+	}
+
 	s.kSize.WithLabelValues(fmt.Sprintf("%d", block.KSize)).Inc()
 	s.preValidationTime.Set(block.PreValidationTime)
 	s.validationTime.Set(block.ValidationTime)
