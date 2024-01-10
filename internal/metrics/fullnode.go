@@ -314,7 +314,9 @@ func (s *FullNodeServiceMetrics) Block(resp *types.WebsocketResponse) {
 	}
 
 	if block.ForkHeight != 0 {
-		log.Infof("Fork height is: %d, Block height is %d, Reorg depth is: %d\n", block.ForkHeight, block.Height, block.Height - block.ForkHeight)
+		// Normal new block is "1", so remove the 1 so that a standard block add is just 0
+		reorgDepth := block.Height - block.ForkHeight - 1
+		log.Infof("Fork height is: %d, Block height is %d, Reorg depth is: %d, Rolled Back Records: %d\n", block.ForkHeight, block.Height, reorgDepth, block.RolledBackRecords)
 	}
 
 	s.kSize.WithLabelValues(fmt.Sprintf("%d", block.KSize)).Inc()

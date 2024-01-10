@@ -6,6 +6,8 @@ github.com/chia-network/go-chia-libs v0.5.2 h1:knK/LAWhaRw2OG1iiK/gK9gKRmNNdB6BK
 github.com/chia-network/go-chia-libs v0.5.2/go.mod h1:zQ2cAB+soETmCQBBfcd352FWJRTzXrSqifWuQ2/Gx9Q=
 github.com/chia-network/go-chia-libs v0.5.3-0.20240109163259-cad02e4d66cd h1:xjNve8V16yMku3ZW/Qso9SSHQJw/p1Gjyx2daFkdhfs=
 github.com/chia-network/go-chia-libs v0.5.3-0.20240109163259-cad02e4d66cd/go.mod h1:zQ2cAB+soETmCQBBfcd352FWJRTzXrSqifWuQ2/Gx9Q=
+github.com/chia-network/go-chia-libs v0.5.3-0.20240110150857-844c667172ed h1:KRvquPZpRciwxTuxu9AuLT8qKYPkAqsedLP9k+ZMNYU=
+github.com/chia-network/go-chia-libs v0.5.3-0.20240110150857-844c667172ed/go.mod h1:zQ2cAB+soETmCQBBfcd352FWJRTzXrSqifWuQ2/Gx9Q=
 github.com/chia-network/go-modules v0.0.4 h1:XlCcuT4j1krLvsFT1Y49Un5xORwcTc8jjE4SHih7OTI=
 github.com/chia-network/go-modules v0.0.4/go.mod h1:JP8mG/9ieE76VcGIbzD5G3/4YDmvNhRryiQwp8GQr1U=
 github.com/cpuguy83/go-md2man/v2 v2.0.3/go.mod h1:tgQtvFlXSQOSOSIRvRPT7W67SCa46tRHOmNcaadrF8o=
