@@ -35,7 +35,7 @@ func init() {
 		logLevel                          string
 		requestTimeout                    time.Duration
 		disableCentralHarvesterCollection bool
-		logBlockTimes bool
+		logBlockTimes                     bool
 	)
 
 	cobra.OnInitialize(initConfig)
