@@ -78,6 +78,12 @@ type FullNodeServiceMetrics struct {
 	heightToHash      *wrappedPrometheus.LazyGauge
 	subEpochSummaries *wrappedPrometheus.LazyGauge
 
+	// Reorg Metrics
+	lastBlockReorgDepth        *wrappedPrometheus.LazyGauge
+	lastReorgReorgDepth        *wrappedPrometheus.LazyGauge
+	lastBlockRolledBackRecords *wrappedPrometheus.LazyGauge
+	lastReorgRolledBackRecords *wrappedPrometheus.LazyGauge
+
 	// Debug Metric
 	debug *prometheus.GaugeVec
 
@@ -129,6 +135,12 @@ func (s *FullNodeServiceMetrics) InitMetrics() {
 	s.peersDat = s.metrics.newGauge(chiaServiceFullNode, "peers_dat_filesize", "Size of peers.dat file")
 	s.heightToHash = s.metrics.newGauge(chiaServiceFullNode, "height_to_hash_filesize", "Size of height_to_hash file")
 	s.subEpochSummaries = s.metrics.newGauge(chiaServiceFullNode, "sub_epoch_summaries_filesize", "Size of sub_epoch_summaries file")
+
+	// Reorg Related
+	s.lastBlockReorgDepth = s.metrics.newGauge(chiaServiceFullNode, "last_block_reorg_depth", "For the last block, the reorg depth. Generally expected to be zero, indicating no reorg happened for this block")
+	s.lastReorgReorgDepth = s.metrics.newGauge(chiaServiceFullNode, "last_reorg_reorg_depth", "For the last reorg that was seen, the reorg depth. This does not get set to a new value until the next reorg is seen")
+	s.lastBlockRolledBackRecords = s.metrics.newGauge(chiaServiceFullNode, "last_block_rolled_back_records", "For the last block, the number of records that were rolled back. Generally expected to be zero, indicating no reorg happened for this block")
+	s.lastReorgRolledBackRecords = s.metrics.newGauge(chiaServiceFullNode, "last_reorg_rolled_back_records", "For the last reorg that was seen, the number of records that were rolled back. This does not get set to a new value until the next reorg is seen")
 
 	// Debug Metric
 	s.debug = s.metrics.newGaugeVec(chiaServiceFullNode, "debug_metrics", "misc debugging metrics distinguished by labels", []string{"key"})
@@ -183,6 +195,11 @@ func (s *FullNodeServiceMetrics) Disconnected() {
 	s.totalSignagePoints.Unregister()
 	s.signagePointsSubSlot.Unregister()
 	s.currentSignagePoint.Unregister()
+
+	s.lastBlockReorgDepth.Unregister()
+	s.lastReorgReorgDepth.Unregister()
+	s.lastBlockRolledBackRecords.Unregister()
+	s.lastReorgRolledBackRecords.Unregister()
 }
 
 // Reconnected is called when the service is reconnected after the websocket was disconnected
@@ -318,7 +335,14 @@ func (s *FullNodeServiceMetrics) Block(resp *types.WebsocketResponse) {
 		rolledBackRecords := block.RolledBackRecords.MustGet()
 		// Normal new block is "1", so remove the 1 so that a standard block add is just 0
 		reorgDepth := block.Height - forkHeight - 1
-		log.Infof("Fork height is: %d, Block height is %d, Reorg depth is: %d, Rolled Back Records: %d\n", forkHeight, block.Height, reorgDepth, rolledBackRecords)
+		log.Debugf("Fork height is: %d, Block height is %d, Reorg depth is: %d, Rolled Back Records: %d\n", forkHeight, block.Height, reorgDepth, rolledBackRecords)
+		s.lastBlockReorgDepth.Set(float64(reorgDepth))
+		s.lastBlockRolledBackRecords.Set(float64(rolledBackRecords))
+
+		if reorgDepth > 0 || rolledBackRecords > 0 {
+			s.lastReorgReorgDepth.Set(float64(reorgDepth))
+			s.lastReorgRolledBackRecords.Set(float64(rolledBackRecords))
+		}
 	}
 
 	s.kSize.WithLabelValues(fmt.Sprintf("%d", block.KSize)).Inc()
