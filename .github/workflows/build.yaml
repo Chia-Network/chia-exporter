@@ -22,7 +22,7 @@ jobs:
         GOARCH: ["amd64", "arm64"]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build Binary
         env:
@@ -46,7 +46,7 @@ jobs:
         GOARCH: ["amd64", "arm64"]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set Env
         uses: Chia-Network/actions/setjobenv@main
@@ -88,7 +88,7 @@ jobs:
     needs:
       - installers
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set Env
         uses: Chia-Network/actions/setjobenv@main
