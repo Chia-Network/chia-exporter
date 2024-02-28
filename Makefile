@@ -45,6 +45,9 @@ $(BIN)/staticcheck: PACKAGE=honnef.co/go/tools/cmd/staticcheck@latest
 ERRCHECK = $(BIN)/errcheck
 $(BIN)/errcheck: PACKAGE=github.com/kisielk/errcheck@latest
 
+VULNCHECK = $(BIN)/govulncheck
+$(BIN)/govulncheck: PACKAGE=golang.org/x/vuln/cmd/govulncheck@latest
+
 # Tests
 
 TEST_TARGETS := test-default test-bench test-short test-verbose test-race
@@ -55,7 +58,7 @@ test-verbose: ARGS=-v            ## Run tests in verbose mode
 test-race:    ARGS=-race         ## Run tests with race detector
 $(TEST_TARGETS): NAME=$(MAKECMDGOALS:test-%=%)
 $(TEST_TARGETS): test
-check test tests: fmt lint vet staticcheck errcheck; $(info $(M) running $(NAME:%=% )tests…) @ ## Run tests
+check test tests: fmt lint vet staticcheck errcheck vulncheck; $(info $(M) running $(NAME:%=% )tests…) @ ## Run tests
 	$Q $(GO) test -timeout $(TIMEOUT)s $(ARGS) $(TESTPKGS)
 
 .PHONY: lint
@@ -77,6 +80,10 @@ staticcheck: | $(STATICCHECK) ; $(info $(M) running staticcheck…) @
 .PHONY: errcheck
 errcheck: | $(ERRCHECK) ; $(info $(M) running errcheck…) @
 	$Q $(ERRCHECK) $(PKGS)
+
+.PHONY: vulncheck
+vulncheck: | $(VULNCHECK) ; $(info $(M) running vulncheck…) @
+	$Q $(VULNCHECK) $(PKGS)
 
 # Misc
 
