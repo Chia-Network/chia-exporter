@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+
+  chia:
+    image: chianetwork/chia-docker:latest
+    container_name: chia
+    restart: unless-stopped
+    ports:
+      - "8444:8444"
+    expose:
+      - 55400
+      - 8555
+      - 8557
+      - 8559
+      - 8560
+      - 8562
+      - 9256
+    environment:
+      self_hostname: 0.0.0.0
+    volumes:
+      - chia-root:/root/.chia
+
+  chia-exporter:
+    image: ghcr.io/chia-network/chia-exporter:latest
+    container_name: chia-exporter
+    restart: unless-stopped
+    environment:
+      CHIA_ROOT: /root/.chia/mainnet
+      CHIA_EXPORTER_HOSTNAME: chia
+    volumes:
+      - chia-root:/root/.chia
+
+volumes:
+  chia-root:
