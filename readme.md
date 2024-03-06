@@ -88,6 +88,7 @@ metrics-port: 9914
 
 When running alongside the crawler, the exporter can optionally export metrics indicating how many peers have been discovered in each country (based on IP address) and/or how many peers are in each ASN. To enable this functionality, you will need to download the appropriate MaxMind GeoLite2 database and provide the path to the exporter application. The paths can be provided with command line flags, an entry in the config yaml file , or an environment variable . To gain access to the MaxMind DBs, you can [register here](https://www.maxmind.com/en/geolite2/signup).
 
+ASN data can cause a huge explosion of labels in prometheus, and as such, it is not recommended to export ASN data to prometheus. We support writing ASN data to MySQL as another supported Grafana datasource instead.
 
 `--maxmind-country-db-path /path/to/GeoLite2-Country.mmdb`
 `maxmind-country-db-path: /path/to/GeoLite2-Country.mmdb`
