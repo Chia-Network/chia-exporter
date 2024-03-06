@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -28,7 +29,8 @@ type CrawlerServiceMetrics struct {
 	metrics *Metrics
 
 	// Interfaces with Maxmind
-	maxMindDB *maxminddb.Reader
+	maxMindCountryDB *maxminddb.Reader
+	maxMindASNDB     *maxminddb.Reader
 
 	// Crawler Metrics
 	totalNodes5Days         *wrappedPrometheus.LazyGauge
@@ -55,22 +57,44 @@ func (s *CrawlerServiceMetrics) InitMetrics() {
 	// Debug Metric
 	s.debug = s.metrics.newGaugeVec(chiaServiceCrawler, "debug_metrics", "random debugging metrics distinguished by labels", []string{"key"})
 
-	err := s.initMaxmindDB()
+	err := s.initMaxmindCountryDB()
 	if err != nil {
 		// Continue on maxmind error - optional/not critical functionality
-		log.Errorf("Error initializing maxmind DB: %s\n", err.Error())
+		log.Printf("Error initializing maxmind country DB: %s\n", err.Error())
+	}
+
+	err = s.initMaxmindASNDB()
+	if err != nil {
+		// Continue on maxmind error - optional/not critical functionality
+		log.Printf("Error initializing maxmind ASN DB: %s\n", err.Error())
 	}
 }
 
-// initMaxmindDB loads the maxmind DB if the file is present
+// initMaxmindCountryDB loads the maxmind country DB if the file is present
 // If the DB is not present, ip/country mapping is skipped
-func (s *CrawlerServiceMetrics) initMaxmindDB() error {
+func (s *CrawlerServiceMetrics) initMaxmindCountryDB() error {
 	var err error
-	dbPath := viper.GetString("maxmind-db-path")
+	dbPath := viper.GetString("maxmind-country-db-path")
 	if dbPath == "" {
 		return nil
 	}
-	s.maxMindDB, err = maxminddb.Open(dbPath)
+	s.maxMindCountryDB, err = maxminddb.Open(dbPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// initMaxmindASNDB loads the maxmind ASN DB if the file is present
+// If the DB is not present, ip/ASN mapping is skipped
+func (s *CrawlerServiceMetrics) initMaxmindASNDB() error {
+	var err error
+	dbPath := viper.GetString("maxmind-asn-db-path")
+	if dbPath == "" {
+		return nil
+	}
+	s.maxMindASNDB, err = maxminddb.Open(dbPath)
 	if err != nil {
 		return err
 	}
@@ -134,15 +158,16 @@ func (s *CrawlerServiceMetrics) GetPeerCounts(resp *types.WebsocketResponse) {
 			s.versionBuckets.WithLabelValues(version).Set(float64(count))
 		}
 
-		s.StartIPCountryMapping(peerCounts.TotalLast5Days)
+		s.StartIPMapping(peerCounts.TotalLast5Days)
 	}
 }
 
-// StartIPCountryMapping starts the process to fetch current IPs from the crawler
-// and maps them to countries using maxmind
+// StartIPMapping starts the process to fetch current IPs from the crawler
+// when a response is received, the IPs are mapped to countries and/or ASNs using maxmind, if databases are provided
 // Updates metrics value once all pages have been received
-func (s *CrawlerServiceMetrics) StartIPCountryMapping(limit uint) {
-	if s.maxMindDB == nil {
+func (s *CrawlerServiceMetrics) StartIPMapping(limit uint) {
+	// If we don't have either maxmind DB, bail now
+	if s.maxMindCountryDB == nil && s.maxMindASNDB == nil {
 		return
 	}
 
@@ -151,7 +176,7 @@ func (s *CrawlerServiceMetrics) StartIPCountryMapping(limit uint) {
 		return
 	}
 
-	log.Println("Requesting IP addresses from the past 5 days for country mapping...")
+	log.Println("Requesting IP addresses from the past 5 days for country and/or ASN mapping...")
 
 	ipsAfterTimestamp, _, err := s.metrics.httpClient.CrawlerService.GetIPsAfterTimestamp(&rpc.GetIPsAfterTimestampOptions{
 		After: time.Now().Add(-5 * time.Hour * 24).Unix(),
@@ -168,7 +193,8 @@ func (s *CrawlerServiceMetrics) StartIPCountryMapping(limit uint) {
 // GetIPsAfterTimestamp processes a response of IPs seen since a timestamp
 // Currently assumes all IPs will be in one response
 func (s *CrawlerServiceMetrics) GetIPsAfterTimestamp(ips *rpc.GetIPsAfterTimestampResponse) {
-	if s.maxMindDB == nil {
+	// If we don't have either maxmind DB, bail now
+	if s.maxMindCountryDB == nil && s.maxMindASNDB == nil {
 		return
 	}
 
@@ -176,6 +202,12 @@ func (s *CrawlerServiceMetrics) GetIPsAfterTimestamp(ips *rpc.GetIPsAfterTimesta
 		return
 	}
 
+	s.ProcessIPCountryMapping(ips)
+	s.ProcessIPASNMapping(ips)
+}
+
+// ProcessIPCountryMapping Processes the list of IPs to countries
+func (s *CrawlerServiceMetrics) ProcessIPCountryMapping(ips *rpc.GetIPsAfterTimestampResponse) {
 	type countStruct struct {
 		ISOCode string
 		Name    string
@@ -210,6 +242,73 @@ func (s *CrawlerServiceMetrics) GetIPsAfterTimestamp(ips *rpc.GetIPsAfterTimesta
 	}
 }
 
+// ProcessIPASNMapping Processes the list of IPs to ASNs
+func (s *CrawlerServiceMetrics) ProcessIPASNMapping(ips *rpc.GetIPsAfterTimestampResponse) {
+	// Don't process if we can't store
+	if s.metrics.mysqlClient == nil {
+		return
+	}
+	type countStruct struct {
+		ASN          uint32
+		Organization string
+		Count        uint32
+	}
+	asnCounts := map[uint32]*countStruct{}
+
+	if ipresult, hasIPResult := ips.IPs.Get(); hasIPResult {
+		for _, ip := range ipresult {
+			asn, err := s.GetASNForIP(ip)
+			if err != nil {
+				continue
+			}
+
+			if _, ok := asnCounts[asn.AutonomousSystemNumber]; !ok {
+				asnCounts[asn.AutonomousSystemNumber] = &countStruct{
+					ASN:          asn.AutonomousSystemNumber,
+					Organization: asn.AutonomousSystemOrganization,
+					Count:        0,
+				}
+			}
+
+			asnCounts[asn.AutonomousSystemNumber].Count++
+		}
+	}
+
+	err := s.metrics.DeleteASNRecords()
+	if err != nil {
+		log.Errorf("unable to delete old ASN records from the database: %s\n", err.Error())
+		return
+	}
+
+	batchSize := viper.GetUint32("mysql-batch-size")
+	var valueStrings []string
+	var valueArgs []interface{}
+
+	for i, asnData := range asnCounts {
+		if asnData.ASN == 0 {
+			continue
+		}
+
+		valueStrings = append(valueStrings, "(?, ?, ?)")
+		valueArgs = append(valueArgs, asnData.ASN, asnData.Organization, asnData.Count)
+
+		// Execute the batch insert when reaching the batch size or the end of the slice
+		if (i+1)%batchSize == 0 || i+1 == uint32(len(asnCounts)) {
+			_, err := s.metrics.mysqlClient.Exec(
+				fmt.Sprintf("INSERT INTO asn(asn, organization, count) VALUES %s", strings.Join(valueStrings, ",")),
+				valueArgs...)
+
+			if err != nil {
+				log.Errorf("error inserting ASN record to mysql for asn:%d count:%d error: %s\n", asnData.ASN, asnData.Count, err.Error())
+			}
+
+			// Reset the slices for the next batch
+			valueStrings = []string{}
+			valueArgs = []interface{}{}
+		}
+	}
+}
+
 // CountryRecord record of a country from maxmind
 type CountryRecord struct {
 	Country Country `maxminddb:"country"`
@@ -223,15 +322,39 @@ type Country struct {
 
 // GetCountryForIP Gets country data for an ip address
 func (s *CrawlerServiceMetrics) GetCountryForIP(ipStr string) (*CountryRecord, error) {
-	if s.maxMindDB == nil {
-		return nil, fmt.Errorf("maxmind not initialized")
+	if s.maxMindCountryDB == nil {
+		return nil, fmt.Errorf("maxmind country DB not initialized")
 	}
 
 	ip := net.ParseIP(ipStr)
 
 	record := &CountryRecord{}
 
-	err := s.maxMindDB.Lookup(ip, record)
+	err := s.maxMindCountryDB.Lookup(ip, record)
+	if err != nil {
+		return nil, err
+	}
+
+	return record, nil
+}
+
+// ASNRecord record of a country from maxmind
+type ASNRecord struct {
+	AutonomousSystemNumber       uint32 `maxminddb:"autonomous_system_number"`
+	AutonomousSystemOrganization string `maxminddb:"autonomous_system_organization"`
+}
+
+// GetASNForIP Gets ASN data for an ip address
+func (s *CrawlerServiceMetrics) GetASNForIP(ipStr string) (*ASNRecord, error) {
+	if s.maxMindASNDB == nil {
+		return nil, fmt.Errorf("maxmind ASN DB not initialized")
+	}
+
+	ip := net.ParseIP(ipStr)
+
+	record := &ASNRecord{}
+
+	err := s.maxMindASNDB.Lookup(ip, &record)
 	if err != nil {
 		return nil, err
 	}

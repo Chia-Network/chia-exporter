@@ -1,11 +1,14 @@
 package metrics
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 
+	"github.com/go-sql-driver/mysql"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
@@ -64,6 +67,9 @@ type Metrics struct {
 	// This holds a custom prometheus registry so that only our metrics are exported, and not the default go metrics
 	registry *prometheus.Registry
 
+	// Holds a MySQL DB Instance if configured
+	mysqlClient *sql.DB
+
 	// All the serviceMetrics interfaces that are registered
 	serviceMetrics map[chiaService]serviceMetrics
 }
@@ -99,8 +105,17 @@ func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
 		log.Errorf("Error creating http client: %s\n", err.Error())
 	}
 
-	// Register each service's metrics
+	err = metrics.createDBClient()
+	if err != nil {
+		log.Debugf("ERROR creating MySQL Client. Will not store any metrics to MySQL")
+	}
+	err = metrics.initTables()
+	if err != nil {
+		log.Debugf("ERROR ensuring tables exist in MySQL. Will not process or store any MySQL only metrics")
+		metrics.mysqlClient = nil
+	}
 
+	// Register each service's metrics
 	metrics.serviceMetrics[chiaServiceFullNode] = &FullNodeServiceMetrics{metrics: metrics}
 	metrics.serviceMetrics[chiaServiceWallet] = &WalletServiceMetrics{metrics: metrics}
 	metrics.serviceMetrics[chiaServiceCrawler] = &CrawlerServiceMetrics{metrics: metrics}
@@ -114,6 +129,29 @@ func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
 	}
 
 	return metrics, nil
+}
+
+func (m *Metrics) createDBClient() error {
+	var err error
+
+	cfg := mysql.Config{
+		User:                 viper.GetString("mysql-user"),
+		Passwd:               viper.GetString("mysql-password"),
+		Net:                  "tcp",
+		Addr:                 fmt.Sprintf("%s:%d", viper.GetString("mysql-host"), viper.GetUint16("mysql-port")),
+		DBName:               viper.GetString("mysql-db-name"),
+		AllowNativePasswords: true,
+	}
+	m.mysqlClient, err = sql.Open("mysql", cfg.FormatDSN())
+	if err != nil {
+		return err
+	}
+
+	m.mysqlClient.SetConnMaxLifetime(time.Minute * 3)
+	m.mysqlClient.SetMaxOpenConns(10)
+	m.mysqlClient.SetMaxIdleConns(10)
+
+	return nil
 }
 
 // newGauge returns a lazy gauge that follows naming conventions
