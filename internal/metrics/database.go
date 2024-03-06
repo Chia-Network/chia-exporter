@@ -9,6 +9,7 @@ func (m *Metrics) initTables() error {
 		"  `asn` int unsigned NOT NULL," +
 		"  `organization` VARCHAR(255) NOT NULL," +
 		"  `count` int unsigned NOT NULL," +
+		"  `network` VARCHAR(255) NOT NULL," +
 		"UNIQUE KEY `asn-unique` (`asn`)" +
 		") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;"
 
@@ -20,12 +21,12 @@ func (m *Metrics) initTables() error {
 }
 
 // DeleteASNRecords deletes all records from the asn table in the database
-func (m *Metrics) DeleteASNRecords() error {
+func (m *Metrics) DeleteASNRecords(networkName string) error {
 	if m.mysqlClient == nil {
 		return nil
 	}
-	query := "DELETE from asn;"
-	result, err := m.mysqlClient.Query(query)
+	query := "DELETE from asn where network=?;"
+	result, err := m.mysqlClient.Query(query, networkName)
 	if err != nil {
 		return err
 	}

@@ -42,6 +42,9 @@ type CrawlerServiceMetrics struct {
 
 	// Debug Metric
 	debug *prometheus.GaugeVec
+
+	// Current network
+	network *string
 }
 
 // InitMetrics sets all the metrics properties
@@ -248,6 +251,19 @@ func (s *CrawlerServiceMetrics) ProcessIPASNMapping(ips *rpc.GetIPsAfterTimestam
 	if s.metrics.mysqlClient == nil {
 		return
 	}
+	if s.network == nil {
+		netInfo, _, err := s.metrics.httpClient.CrawlerService.GetNetworkInfo(&rpc.GetNetworkInfoOptions{})
+		if err != nil {
+			log.Errorf("Could not get network information to store with ASN data: %s\n", err.Error())
+			return
+		}
+		if netInfo.NetworkName.IsAbsent() {
+			log.Error("network name was absent in get_network_info request. Can't store ASNs without network name")
+			return
+		}
+		netName := netInfo.NetworkName.MustGet()
+		s.network = &netName
+	}
 	type countStruct struct {
 		ASN          uint32
 		Organization string
@@ -274,7 +290,7 @@ func (s *CrawlerServiceMetrics) ProcessIPASNMapping(ips *rpc.GetIPsAfterTimestam
 		}
 	}
 
-	err := s.metrics.DeleteASNRecords()
+	err := s.metrics.DeleteASNRecords(*s.network)
 	if err != nil {
 		log.Errorf("unable to delete old ASN records from the database: %s\n", err.Error())
 		return
@@ -289,13 +305,13 @@ func (s *CrawlerServiceMetrics) ProcessIPASNMapping(ips *rpc.GetIPsAfterTimestam
 			continue
 		}
 
-		valueStrings = append(valueStrings, "(?, ?, ?)")
-		valueArgs = append(valueArgs, asnData.ASN, asnData.Organization, asnData.Count)
+		valueStrings = append(valueStrings, "(?, ?, ?, ?)")
+		valueArgs = append(valueArgs, asnData.ASN, asnData.Organization, asnData.Count, *s.network)
 
 		// Execute the batch insert when reaching the batch size or the end of the slice
 		if (i+1)%batchSize == 0 || i+1 == uint32(len(asnCounts)) {
 			_, err := s.metrics.mysqlClient.Exec(
-				fmt.Sprintf("INSERT INTO asn(asn, organization, count) VALUES %s", strings.Join(valueStrings, ",")),
+				fmt.Sprintf("INSERT INTO asn(asn, organization, count, network) VALUES %s", strings.Join(valueStrings, ",")),
 				valueArgs...)
 
 			if err != nil {
