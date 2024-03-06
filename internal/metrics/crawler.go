@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -38,7 +39,6 @@ type CrawlerServiceMetrics struct {
 	ipv6Nodes5Days          *wrappedPrometheus.LazyGauge
 	versionBuckets          *prometheus.GaugeVec
 	countryNodeCountBuckets *prometheus.GaugeVec
-	asnNodeCountBuckets     *prometheus.GaugeVec
 
 	// Debug Metric
 	debug *prometheus.GaugeVec
@@ -53,7 +53,6 @@ func (s *CrawlerServiceMetrics) InitMetrics() {
 	s.ipv6Nodes5Days = s.metrics.newGauge(chiaServiceCrawler, "ipv6_nodes_5_days", "Total number of IPv6 nodes that have been gossiped around the network with a timestamp in the last 5 days. The crawler did not necessarily connect to all of these peers itself.")
 	s.versionBuckets = s.metrics.newGaugeVec(chiaServiceCrawler, "peer_version", "Number of peers for each version. Only peers the crawler was able to connect to are included here.", []string{"version"})
 	s.countryNodeCountBuckets = s.metrics.newGaugeVec(chiaServiceCrawler, "country_node_count", "Number of peers gossiped in the last 5 days from each country.", []string{"country", "country_display"})
-	s.asnNodeCountBuckets = s.metrics.newGaugeVec(chiaServiceCrawler, "asn_node_count", "Number of peers gossiped in the last 5 days from each asn.", []string{"asn", "organization"})
 
 	// Debug Metric
 	s.debug = s.metrics.newGaugeVec(chiaServiceCrawler, "debug_metrics", "random debugging metrics distinguished by labels", []string{"key"})
@@ -177,7 +176,7 @@ func (s *CrawlerServiceMetrics) StartIPMapping(limit uint) {
 		return
 	}
 
-	log.Println("Requesting IP addresses from the past 5 days for country mapping...")
+	log.Println("Requesting IP addresses from the past 5 days for country and/or ASN mapping...")
 
 	ipsAfterTimestamp, _, err := s.metrics.httpClient.CrawlerService.GetIPsAfterTimestamp(&rpc.GetIPsAfterTimestampOptions{
 		After: time.Now().Add(-5 * time.Hour * 24).Unix(),
@@ -245,12 +244,16 @@ func (s *CrawlerServiceMetrics) ProcessIPCountryMapping(ips *rpc.GetIPsAfterTime
 
 // ProcessIPASNMapping Processes the list of IPs to ASNs
 func (s *CrawlerServiceMetrics) ProcessIPASNMapping(ips *rpc.GetIPsAfterTimestampResponse) {
-	type countStruct struct {
-		ASN          int
-		Organization string
-		Count        float64
+	// Don't process if we can't store
+	if s.metrics.mysqlClient == nil {
+		return
 	}
-	asnCounts := map[int]*countStruct{}
+	type countStruct struct {
+		ASN          uint32
+		Organization string
+		Count        uint32
+	}
+	asnCounts := map[uint32]*countStruct{}
 
 	if ipresult, hasIPResult := ips.IPs.Get(); hasIPResult {
 		for _, ip := range ipresult {
@@ -271,8 +274,38 @@ func (s *CrawlerServiceMetrics) ProcessIPASNMapping(ips *rpc.GetIPsAfterTimestam
 		}
 	}
 
-	for _, asnData := range asnCounts {
-		s.asnNodeCountBuckets.WithLabelValues(fmt.Sprintf("%d", asnData.ASN), asnData.Organization).Set(asnData.Count)
+	err := s.metrics.DeleteASNRecords()
+	if err != nil {
+		log.Errorf("unable to delete old ASN records from the database: %s\n", err.Error())
+		return
+	}
+
+	batchSize := viper.GetUint32("mysql-batch-size")
+	var valueStrings []string
+	var valueArgs []interface{}
+
+	for i, asnData := range asnCounts {
+		if asnData.ASN == 0 {
+			continue
+		}
+
+		valueStrings = append(valueStrings, "(?, ?, ?)")
+		valueArgs = append(valueArgs, asnData.ASN, asnData.Organization, asnData.Count)
+
+		// Execute the batch insert when reaching the batch size or the end of the slice
+		if (i+1)%batchSize == 0 || i+1 == uint32(len(asnCounts)) {
+			_, err := s.metrics.mysqlClient.Exec(
+				fmt.Sprintf("INSERT INTO asn(asn, organization, count) VALUES %s", strings.Join(valueStrings, ",")),
+				valueArgs...)
+
+			if err != nil {
+				log.Errorf("error inserting ASN record to mysql for asn:%d count:%d error: %s\n", asnData.ASN, asnData.Count, err.Error())
+			}
+
+			// Reset the slices for the next batch
+			valueStrings = []string{}
+			valueArgs = []interface{}{}
+		}
 	}
 }
 
@@ -307,7 +340,7 @@ func (s *CrawlerServiceMetrics) GetCountryForIP(ipStr string) (*CountryRecord, e
 
 // ASNRecord record of a country from maxmind
 type ASNRecord struct {
-	AutonomousSystemNumber       int    `maxminddb:"autonomous_system_number"`
+	AutonomousSystemNumber       uint32 `maxminddb:"autonomous_system_number"`
 	AutonomousSystemOrganization string `maxminddb:"autonomous_system_organization"`
 }
 
