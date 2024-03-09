@@ -25,7 +25,7 @@ all: fmt lint vet build
 .PHONY: build
 build: $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
 	$Q CGO_ENABLED=0 $(GO) build \
-		-ldflags "-X main.gitVersion=$$(git describe --tags) -X \"main.buildTime=$$(date -u '+%Y-%m-%d %H:%M:%S %Z')\"" \
+		-ldflags "-X main.gitVersion=$$(git describe --tags) -X $(MODULE)/cmd.gitVersion=$$(git describe --tags) -X \"main.buildTime=$$(date -u '+%Y-%m-%d %H:%M:%S %Z')\" -X \"$(MODULE)/cmd.buildTime=$$(date -u '+%Y-%m-%d %H:%M:%S %Z')\"" \
 		-tags release \
 		-o $(BIN)/$(notdir $(basename $(MODULE)))$(binext)
 # Tools
