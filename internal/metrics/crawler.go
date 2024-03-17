@@ -273,7 +273,7 @@ func (s *CrawlerServiceMetrics) ProcessIPASNMapping(ips *rpc.GetIPsAfterTimestam
 		for _, ip := range ipresult {
 			asn, err := s.GetASNForIP(ip)
 			if err != nil {
-				log.Debug("Unable to get ASN for IP %s\n", ip)
+				log.Debugf("Unable to get ASN for IP %s\n", ip)
 				continue
 			}
 
