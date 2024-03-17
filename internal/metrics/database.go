@@ -10,7 +10,7 @@ func (m *Metrics) initTables() error {
 		"  `organization` VARCHAR(255) NOT NULL," +
 		"  `count` int unsigned NOT NULL," +
 		"  `network` VARCHAR(255) NOT NULL," +
-		"UNIQUE KEY `asn-unique` (`asn`)" +
+		"UNIQUE KEY `asn-network-unique` (`asn-network`)" +
 		") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;"
 
 	result, err := m.mysqlClient.Query(query)
