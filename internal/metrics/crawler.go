@@ -199,10 +199,12 @@ func (s *CrawlerServiceMetrics) StartIPMapping(limit uint) {
 func (s *CrawlerServiceMetrics) GetIPsAfterTimestamp(ips *rpc.GetIPsAfterTimestampResponse) {
 	// If we don't have either maxmind DB, bail now
 	if s.maxMindCountryDB == nil && s.maxMindASNDB == nil {
+		log.Debug("Missing both ASN and Country maxmind DBs")
 		return
 	}
 
 	if ips == nil {
+		log.Debug("IPs after timestamp are nil")
 		return
 	}
 
@@ -250,6 +252,7 @@ func (s *CrawlerServiceMetrics) ProcessIPCountryMapping(ips *rpc.GetIPsAfterTime
 func (s *CrawlerServiceMetrics) ProcessIPASNMapping(ips *rpc.GetIPsAfterTimestampResponse) {
 	// Don't process if we can't store
 	if s.metrics.mysqlClient == nil {
+		log.Debug("MySQL client is nil")
 		return
 	}
 	if s.network == nil {
@@ -264,10 +267,13 @@ func (s *CrawlerServiceMetrics) ProcessIPASNMapping(ips *rpc.GetIPsAfterTimestam
 	}
 	asnCounts := map[uint32]*countStruct{}
 
+	log.Debugf("Have %d IPs\n", len(ips.IPs.MustGet()))
+
 	if ipresult, hasIPResult := ips.IPs.Get(); hasIPResult {
 		for _, ip := range ipresult {
 			asn, err := s.GetASNForIP(ip)
 			if err != nil {
+				log.Debugf("Unable to get ASN for IP %s\n", ip)
 				continue
 			}
 
@@ -303,7 +309,7 @@ func (s *CrawlerServiceMetrics) ProcessIPASNMapping(ips *rpc.GetIPsAfterTimestam
 
 		// Execute the batch insert when reaching the batch size or the end of the slice
 		if (i+1)%batchSize == 0 || i+1 == uint32(len(asnCounts)) {
-			_, err := s.metrics.mysqlClient.Exec(
+			_, err = s.metrics.mysqlClient.Exec(
 				fmt.Sprintf("INSERT INTO asn(asn, organization, count, network) VALUES %s", strings.Join(valueStrings, ",")),
 				valueArgs...)
 
@@ -314,6 +320,17 @@ func (s *CrawlerServiceMetrics) ProcessIPASNMapping(ips *rpc.GetIPsAfterTimestam
 			// Reset the slices for the next batch
 			valueStrings = []string{}
 			valueArgs = []interface{}{}
+		}
+	}
+
+	// If there are any records left that did not meet the batch size threshold, insert them now
+	if len(valueStrings) > 0 {
+		_, err := s.metrics.mysqlClient.Exec(
+			fmt.Sprintf("INSERT INTO asn(asn, organization, count, network) VALUES %s", strings.Join(valueStrings, ",")),
+			valueArgs...)
+
+		if err != nil {
+			log.Errorf("error inserting remaining ASN records to mysql: %s\n", err.Error())
 		}
 	}
 }
