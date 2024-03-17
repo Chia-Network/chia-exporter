@@ -28,6 +28,9 @@ type CrawlerServiceMetrics struct {
 	// Holds a reference to the main metrics container this is a part of
 	metrics *Metrics
 
+	// Current network
+	network *string
+
 	// Interfaces with Maxmind
 	maxMindCountryDB *maxminddb.Reader
 	maxMindASNDB     *maxminddb.Reader
@@ -42,13 +45,11 @@ type CrawlerServiceMetrics struct {
 
 	// Debug Metric
 	debug *prometheus.GaugeVec
-
-	// Current network
-	network *string
 }
 
 // InitMetrics sets all the metrics properties
-func (s *CrawlerServiceMetrics) InitMetrics() {
+func (s *CrawlerServiceMetrics) InitMetrics(network *string) {
+	s.network = network
 	// Crawler Metrics
 	s.totalNodes5Days = s.metrics.newGauge(chiaServiceCrawler, "total_nodes_5_days", "Total number of nodes that have been gossiped around the network with a timestamp in the last 5 days. The crawler did not necessarily connect to all of these peers itself.")
 	s.reliableNodes = s.metrics.newGauge(chiaServiceCrawler, "reliable_nodes", "reliable nodes are nodes that have port 8444 open and have available space for more peer connections")
@@ -252,18 +253,10 @@ func (s *CrawlerServiceMetrics) ProcessIPASNMapping(ips *rpc.GetIPsAfterTimestam
 		return
 	}
 	if s.network == nil {
-		netInfo, _, err := s.metrics.httpClient.CrawlerService.GetNetworkInfo(&rpc.GetNetworkInfoOptions{})
-		if err != nil {
-			log.Errorf("Could not get network information to store with ASN data: %s\n", err.Error())
-			return
-		}
-		if netInfo.NetworkName.IsAbsent() {
-			log.Error("network name was absent in get_network_info request. Can't store ASNs without network name")
-			return
-		}
-		netName := netInfo.NetworkName.MustGet()
-		s.network = &netName
+		log.Errorln("Network information missing. Can't store ASN data without network")
+		return
 	}
+
 	type countStruct struct {
 		ASN          uint32
 		Organization string

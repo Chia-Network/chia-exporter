@@ -39,7 +39,7 @@ type WalletServiceMetrics struct {
 }
 
 // InitMetrics sets all the metrics properties
-func (s *WalletServiceMetrics) InitMetrics() {
+func (s *WalletServiceMetrics) InitMetrics(network *string) {
 	// Connection Metrics
 	s.connectionCount = s.metrics.newGaugeVec(chiaServiceWallet, "connection_count", "Number of active connections for each type of peer", []string{"node_type"})
 

@@ -93,7 +93,7 @@ type FullNodeServiceMetrics struct {
 }
 
 // InitMetrics sets all the metrics properties
-func (s *FullNodeServiceMetrics) InitMetrics() {
+func (s *FullNodeServiceMetrics) InitMetrics(network *string) {
 	// BlockchainState Metrics
 	s.difficulty = s.metrics.newGauge(chiaServiceFullNode, "difficulty", "Current network difficulty")
 	s.mempoolCost = s.metrics.newGauge(chiaServiceFullNode, "mempool_cost", "Current mempool size in cost")
