@@ -13,13 +13,13 @@ import (
 var cfgFile string
 var (
 	gitVersion string
-	buildTime string
+	buildTime  string
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "chia-exporter",
-	Short: "Prometheus metric exporter for Chia Blockchain",
+	Use:     "chia-exporter",
+	Short:   "Prometheus metric exporter for Chia Blockchain",
 	Version: fmt.Sprintf("%s (%s)", gitVersion, buildTime),
 }
 

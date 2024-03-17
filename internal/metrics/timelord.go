@@ -31,7 +31,7 @@ type TimelordServiceMetrics struct {
 }
 
 // InitMetrics sets all the metrics properties
-func (s *TimelordServiceMetrics) InitMetrics() {
+func (s *TimelordServiceMetrics) InitMetrics(network *string) {
 	s.fastestTimelord = s.metrics.newCounter(chiaServiceTimelord, "fastest_timelord", "Counter for how many times this timelord has been fastest since the exporter has been running")
 	s.slowTimelord = s.metrics.newCounter(chiaServiceTimelord, "slow_timelord", "Counter for how many times this timelord has NOT been the fastest since the exporter has been running")
 	s.estimatedIPS = s.metrics.newGauge(chiaServiceTimelord, "estimated_ips", "Current estimated IPS. Updated every time a new PoT Challenge is complete")

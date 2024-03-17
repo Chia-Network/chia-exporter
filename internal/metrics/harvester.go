@@ -47,7 +47,7 @@ type HarvesterServiceMetrics struct {
 }
 
 // InitMetrics sets all the metrics properties
-func (s *HarvesterServiceMetrics) InitMetrics() {
+func (s *HarvesterServiceMetrics) InitMetrics(network *string) {
 	// Connection Metrics
 	s.connectionCount = s.metrics.newGaugeVec(chiaServiceHarvester, "connection_count", "Number of active connections for each type of peer", []string{"node_type"})
 

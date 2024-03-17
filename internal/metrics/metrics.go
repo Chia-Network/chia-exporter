@@ -34,7 +34,7 @@ const (
 // serviceMetrics defines methods that must be on all metrics services
 type serviceMetrics interface {
 	// InitMetrics registers any metrics (gauges, counters, etc) on creation of the metrics object
-	InitMetrics()
+	InitMetrics(network *string)
 
 	// InitialData is called after the websocket connection is opened to allow each service
 	// to load any initial data that should be reported
@@ -58,6 +58,7 @@ type serviceMetrics interface {
 type Metrics struct {
 	metricsPort uint16
 	client      *rpc.Client
+	network     *string
 
 	// httpClient is another instance of the rpc.Client in HTTP mode
 	// This is used rarely, to request data in response to a websocket event that is too large to fit on a single
@@ -65,7 +66,8 @@ type Metrics struct {
 	httpClient *rpc.Client
 
 	// This holds a custom prometheus registry so that only our metrics are exported, and not the default go metrics
-	registry *prometheus.Registry
+	registry           *prometheus.Registry
+	dynamicPromHandler *dynamicPromHandler
 
 	// Holds a MySQL DB Instance if configured
 	mysqlClient *sql.DB
@@ -123,9 +125,13 @@ func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
 	metrics.serviceMetrics[chiaServiceHarvester] = &HarvesterServiceMetrics{metrics: metrics}
 	metrics.serviceMetrics[chiaServiceFarmer] = &FarmerServiceMetrics{metrics: metrics}
 
+	// See if we can get the network now
+	// If not, the reconnect handler will handle it later
+	_, _ = metrics.checkNetwork()
+
 	// Init each service's metrics
 	for _, service := range metrics.serviceMetrics {
-		service.InitMetrics()
+		service.InitMetrics(metrics.network)
 	}
 
 	return metrics, nil
@@ -154,6 +160,40 @@ func (m *Metrics) createDBClient() error {
 	return nil
 }
 
+// Returns boolean indicating if network changed from previously known value
+func (m *Metrics) checkNetwork() (bool, error) {
+	var currentNetwork string
+	var newNetwork string
+	if m.network == nil {
+		currentNetwork = ""
+	} else {
+		currentNetwork = *m.network
+	}
+
+	m.client.SetSyncMode()
+	defer m.client.SetAsyncMode()
+
+	netInfo, _, err := m.client.DaemonService.GetNetworkInfo(&rpc.GetNetworkInfoOptions{})
+	if err != nil {
+		return false, fmt.Errorf("error checking network info: %w", err)
+	}
+
+	if netInfo != nil && netInfo.NetworkName.IsPresent() {
+		network := netInfo.NetworkName.MustGet()
+		m.network = &network
+		newNetwork = network
+	} else {
+		m.network = nil
+		newNetwork = ""
+	}
+
+	if currentNetwork != newNetwork {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 // newGauge returns a lazy gauge that follows naming conventions
 func (m *Metrics) newGauge(service chiaService, name string, help string) *wrappedPrometheus.LazyGauge {
 	opts := prometheus.GaugeOpts{
@@ -161,6 +201,12 @@ func (m *Metrics) newGauge(service chiaService, name string, help string) *wrapp
 		Subsystem: string(service),
 		Name:      name,
 		Help:      help,
+	}
+
+	if m.network != nil {
+		opts.ConstLabels = map[string]string{
+			"network": *m.network,
+		}
 	}
 
 	gm := prometheus.NewGauge(opts)
@@ -183,6 +229,12 @@ func (m *Metrics) newGaugeVec(service chiaService, name string, help string, lab
 		Help:      help,
 	}
 
+	if m.network != nil {
+		opts.ConstLabels = map[string]string{
+			"network": *m.network,
+		}
+	}
+
 	gm := prometheus.NewGaugeVec(opts, labels)
 
 	m.registry.MustRegister(gm)
@@ -197,6 +249,12 @@ func (m *Metrics) newCounter(service chiaService, name string, help string) *wra
 		Subsystem: string(service),
 		Name:      name,
 		Help:      help,
+	}
+
+	if m.network != nil {
+		opts.ConstLabels = map[string]string{
+			"network": *m.network,
+		}
 	}
 
 	cm := prometheus.NewCounter(opts)
@@ -218,6 +276,12 @@ func (m *Metrics) newCounterVec(service chiaService, name string, help string, l
 		Help:      help,
 	}
 
+	if m.network != nil {
+		opts.ConstLabels = map[string]string{
+			"network": *m.network,
+		}
+	}
+
 	gm := prometheus.NewCounterVec(opts, labels)
 
 	m.registry.MustRegister(gm)
@@ -237,13 +301,26 @@ func (m *Metrics) OpenWebsocket() error {
 		return err
 	}
 
-	err = m.client.AddHandler(m.websocketReceive)
+	_, err = m.client.AddHandler(m.websocketReceive)
 	if err != nil {
 		return err
 	}
 
 	m.client.AddDisconnectHandler(m.disconnectHandler)
 	m.client.AddReconnectHandler(m.reconnectHandler)
+
+	// First, we check the network and see if it changed
+	// If changed, we completely replace the prometheus registry with a new registry and re-init all metrics
+	// otherwise, we call the reconnected handlers
+	changed, _ := m.checkNetwork()
+	if changed {
+		m.registry = prometheus.NewRegistry()
+		m.dynamicPromHandler.updateHandler(promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
+		// Init each service's metrics
+		for _, service := range m.serviceMetrics {
+			service.InitMetrics(m.network)
+		}
+	}
 
 	for _, service := range m.serviceMetrics {
 		service.InitialData()
@@ -264,7 +341,9 @@ func (m *Metrics) CloseWebsocket() error {
 func (m *Metrics) StartServer() error {
 	log.Printf("Starting metrics server on port %d", m.metricsPort)
 
-	http.Handle("/metrics", promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
+	m.dynamicPromHandler = &dynamicPromHandler{}
+	m.dynamicPromHandler.updateHandler(promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
+	http.Handle("/metrics", m.dynamicPromHandler)
 	http.HandleFunc("/healthz", healthcheckEndpoint)
 	return http.ListenAndServe(fmt.Sprintf(":%d", m.metricsPort), nil)
 }
@@ -303,8 +382,30 @@ func (m *Metrics) disconnectHandler() {
 
 func (m *Metrics) reconnectHandler() {
 	log.Debug("Calling reconnect handlers")
-	for _, service := range m.serviceMetrics {
-		service.Reconnected()
+
+	// First, we check the network and see if it changed
+	// If changed, we completely replace the prometheus registry with a new registry and re-init all metrics
+	// otherwise, we call the reconnected handlers
+	changed, err := m.checkNetwork()
+	if changed || err != nil {
+		if err != nil {
+			m.network = nil
+			log.Errorf("Error checking network. Assuming network changed and resetting metrics: %s\n", err.Error())
+		}
+
+		log.Info("Network Changed, resetting all metrics")
+		m.registry = prometheus.NewRegistry()
+		m.dynamicPromHandler.updateHandler(promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
+		// Init each service's metrics
+		for _, service := range m.serviceMetrics {
+			service.InitMetrics(m.network)
+			service.InitialData()
+		}
+	} else {
+		log.Debug("Network did not change")
+		for _, service := range m.serviceMetrics {
+			service.Reconnected()
+		}
 	}
 }
 

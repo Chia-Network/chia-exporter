@@ -57,7 +57,7 @@ type FarmerServiceMetrics struct {
 }
 
 // InitMetrics sets all the metrics properties
-func (s *FarmerServiceMetrics) InitMetrics() {
+func (s *FarmerServiceMetrics) InitMetrics(network *string) {
 	s.totalPlotsValue = map[types.Bytes32]uint64{}
 	s.nodeIDToHostname = map[types.Bytes32]string{}
 
