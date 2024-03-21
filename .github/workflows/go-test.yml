@@ -1,0 +1,19 @@
+name: Go Test
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container: golang:1
+    steps:
+      - name: Mark git directory safe
+        uses: Chia-Network/actions/git-mark-workspace-safe@main
+
+      - uses: actions/checkout@v4
+
+      - name: Test
+        run: make test
