@@ -130,10 +130,10 @@ jobs:
             $RELEASE_TAG \
             artifacts/installer-chia-exporter*/*.deb
 
-      - uses: Chia-Network/actions/github/jwt@main
-
-      - name: Trigger apt repo update
+      - uses: Chia-Network/actions/github/glue@main
         if: env.FULL_RELEASE == 'true'
-        run: |
-          curl -s -XPOST -H "Authorization: Bearer ${{ env.JWT_TOKEN }}" --data '{"release_version":"${{ env.RELEASE_TAG }}"}' ${{ secrets.GLUE_API_URL }}/api/v1/chia-exporter/${{ github.sha }}/start
-          curl -s -XPOST -H "Authorization: Bearer ${{ env.JWT_TOKEN }}" --data '{"release_version":"${{ env.RELEASE_TAG }}"}' ${{ secrets.GLUE_API_URL }}/api/v1/chia-exporter/${{ github.sha }}/success/deploy
+        with:
+          json_data: '{"release_version":"${{ env.RELEASE_TAG }}"}'
+          glue_url: ${{ secrets.GLUE_API_URL }}
+          glue_project: "chia-exporter"
+          glue_path: "trigger"
