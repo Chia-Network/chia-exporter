@@ -41,7 +41,7 @@ updates:
       - dependencies
       - github_actions
       - "Changed"
-    reviewers: ["cmmarslender", "altendky"]
+    reviewers: ["cmmarslender", "Starttoaster", "pmaslana"]
 
   - package-ecosystem: "npm"
     directory: /
