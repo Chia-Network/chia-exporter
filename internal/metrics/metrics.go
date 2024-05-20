@@ -113,7 +113,7 @@ func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
 	}
 	err = metrics.initTables()
 	if err != nil {
-		log.Errorf("Error ensuring tables exist in MySQL. Will not process or store any MySQL only metrics: %s\n", err.Error())
+		log.Debugf("Error ensuring tables exist in MySQL. Will not process or store any MySQL only metrics: %s\n", err.Error())
 		metrics.mysqlClient = nil
 	}
 
