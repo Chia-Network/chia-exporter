@@ -90,10 +90,7 @@ func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
 
 	log.SetLevel(logLevel)
 
-	metrics.client, err = rpc.NewClient(rpc.ConnectionModeWebsocket, rpc.WithAutoConfig(), rpc.WithBaseURL(&url.URL{
-		Scheme: "wss",
-		Host:   viper.GetString("hostname"),
-	}))
+	err = metrics.setNewClient()
 	if err != nil {
 		return nil, err
 	}
@@ -136,6 +133,19 @@ func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
 	}
 
 	return metrics, nil
+}
+
+func (m *Metrics) setNewClient() error {
+	m.client = nil
+	client, err := rpc.NewClient(rpc.ConnectionModeWebsocket, rpc.WithAutoConfig(), rpc.WithBaseURL(&url.URL{
+		Scheme: "wss",
+		Host:   viper.GetString("hostname"),
+	}))
+	if err != nil {
+		return err
+	}
+	m.client = client
+	return nil
 }
 
 func (m *Metrics) createDBClient() error {
