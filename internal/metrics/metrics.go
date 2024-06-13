@@ -344,7 +344,7 @@ func (m *Metrics) OpenWebsocket() error {
 			// If we don't get any events for 5 minutes, we'll reset the connection
 			time.Sleep(10 * time.Second)
 
-			if m.lastReceive.Before(time.Now().Add(-5*time.Minute)) {
+			if m.lastReceive.Before(time.Now().Add(-5 * time.Minute)) {
 				log.Info("Websocket connection seems down. Recreating...")
 				m.disconnectHandler()
 				err := m.setNewClient()
