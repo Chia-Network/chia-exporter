@@ -339,6 +339,32 @@ func (m *Metrics) OpenWebsocket() error {
 	}
 
 	m.lastReceive = time.Now()
+	go func() {
+		for {
+			// If we don't get any events for 5 minutes, we'll reset the connection
+			time.Sleep(10 * time.Second)
+
+			if m.lastReceive.Before(time.Now().Add(-5*time.Minute)) {
+				log.Info("Websocket connection seems down. Recreating...")
+				m.disconnectHandler()
+				err := m.setNewClient()
+				if err != nil {
+					log.Errorf("Error creating new client: %s", err.Error())
+					continue
+				}
+
+				err = m.OpenWebsocket()
+				if err != nil {
+					log.Errorf("Error opening websocket on new client: %s", err.Error())
+					continue
+				}
+
+				// Got the new connection open, so stop the loop on the old connection
+				// since we called this function again and a new loop was created
+				break
+			}
+		}
+	}()
 
 	return nil
 }
