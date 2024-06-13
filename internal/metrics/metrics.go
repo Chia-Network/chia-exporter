@@ -59,6 +59,7 @@ type Metrics struct {
 	metricsPort uint16
 	client      *rpc.Client
 	network     *string
+	lastReceive time.Time
 
 	// httpClient is another instance of the rpc.Client in HTTP mode
 	// This is used rarely, to request data in response to a websocket event that is too large to fit on a single
@@ -327,6 +328,8 @@ func (m *Metrics) OpenWebsocket() error {
 		service.SetupPollingMetrics()
 	}
 
+	m.lastReceive = time.Now()
+
 	return nil
 }
 
@@ -353,6 +356,8 @@ func (m *Metrics) websocketReceive(resp *types.WebsocketResponse, err error) {
 		log.Errorf("Websocket received err: %s\n", err.Error())
 		return
 	}
+
+	m.lastReceive = time.Now()
 
 	log.Printf("recv: %s %s\n", resp.Origin, resp.Command)
 	log.Debugf("origin: %s command: %s destination: %s data: %s\n", resp.Origin, resp.Command, resp.Destination, string(resp.Data))
