@@ -59,6 +59,7 @@ type Metrics struct {
 	metricsPort uint16
 	client      *rpc.Client
 	network     *string
+	lastReceive time.Time
 
 	// httpClient is another instance of the rpc.Client in HTTP mode
 	// This is used rarely, to request data in response to a websocket event that is too large to fit on a single
@@ -89,10 +90,7 @@ func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
 
 	log.SetLevel(logLevel)
 
-	metrics.client, err = rpc.NewClient(rpc.ConnectionModeWebsocket, rpc.WithAutoConfig(), rpc.WithBaseURL(&url.URL{
-		Scheme: "wss",
-		Host:   viper.GetString("hostname"),
-	}))
+	err = metrics.setNewClient()
 	if err != nil {
 		return nil, err
 	}
@@ -135,6 +133,19 @@ func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
 	}
 
 	return metrics, nil
+}
+
+func (m *Metrics) setNewClient() error {
+	m.client = nil
+	client, err := rpc.NewClient(rpc.ConnectionModeWebsocket, rpc.WithAutoConfig(), rpc.WithBaseURL(&url.URL{
+		Scheme: "wss",
+		Host:   viper.GetString("hostname"),
+	}))
+	if err != nil {
+		return err
+	}
+	m.client = client
+	return nil
 }
 
 func (m *Metrics) createDBClient() error {
@@ -327,6 +338,34 @@ func (m *Metrics) OpenWebsocket() error {
 		service.SetupPollingMetrics()
 	}
 
+	m.lastReceive = time.Now()
+	go func() {
+		for {
+			// If we don't get any events for 5 minutes, we'll reset the connection
+			time.Sleep(10 * time.Second)
+
+			if m.lastReceive.Before(time.Now().Add(-5 * time.Minute)) {
+				log.Info("Websocket connection seems down. Recreating...")
+				m.disconnectHandler()
+				err := m.setNewClient()
+				if err != nil {
+					log.Errorf("Error creating new client: %s", err.Error())
+					continue
+				}
+
+				err = m.OpenWebsocket()
+				if err != nil {
+					log.Errorf("Error opening websocket on new client: %s", err.Error())
+					continue
+				}
+
+				// Got the new connection open, so stop the loop on the old connection
+				// since we called this function again and a new loop was created
+				break
+			}
+		}
+	}()
+
 	return nil
 }
 
@@ -353,6 +392,8 @@ func (m *Metrics) websocketReceive(resp *types.WebsocketResponse, err error) {
 		log.Errorf("Websocket received err: %s\n", err.Error())
 		return
 	}
+
+	m.lastReceive = time.Now()
 
 	log.Printf("recv: %s %s\n", resp.Origin, resp.Command)
 	log.Debugf("origin: %s command: %s destination: %s data: %s\n", resp.Origin, resp.Command, resp.Destination, string(resp.Data))
