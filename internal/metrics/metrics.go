@@ -136,7 +136,6 @@ func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
 }
 
 func (m *Metrics) setNewClient() error {
-	m.client = nil
 	client, err := rpc.NewClient(rpc.ConnectionModeWebsocket, rpc.WithAutoConfig(), rpc.WithBaseURL(&url.URL{
 		Scheme: "wss",
 		Host:   viper.GetString("hostname"),
