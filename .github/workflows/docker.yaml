@@ -11,3 +11,5 @@ on:
 jobs:
   package:
     uses: Chia-Network/actions/.github/workflows/docker-build.yaml@main
+    with:
+      push: ${{ github.event_name != 'pull_request' }}
