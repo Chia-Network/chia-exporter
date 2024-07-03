@@ -6,7 +6,7 @@ require (
 	github.com/chia-network/go-chia-libs v0.8.2
 	github.com/chia-network/go-modules v0.0.5
 	github.com/go-sql-driver/mysql v1.8.1
-	github.com/oschwald/maxminddb-golang v1.13.0
+	github.com/oschwald/maxminddb-golang v1.13.1
 	github.com/prometheus/client_golang v1.19.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.8.1
