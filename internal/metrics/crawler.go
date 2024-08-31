@@ -28,6 +28,9 @@ type CrawlerServiceMetrics struct {
 	// Holds a reference to the main metrics container this is a part of
 	metrics *Metrics
 
+	// General Service Metrics
+	version *prometheus.GaugeVec
+
 	// Current network
 	network *string
 
@@ -50,6 +53,10 @@ type CrawlerServiceMetrics struct {
 // InitMetrics sets all the metrics properties
 func (s *CrawlerServiceMetrics) InitMetrics(network *string) {
 	s.network = network
+
+	// General Service Metrics
+	s.version = s.metrics.newGaugeVec(chiaServiceCrawler, "version", "The version of chia-blockchain the service is running", []string{"version"})
+
 	// Crawler Metrics
 	s.totalNodes5Days = s.metrics.newGauge(chiaServiceCrawler, "total_nodes_5_days", "Total number of nodes that have been gossiped around the network with a timestamp in the last 5 days. The crawler did not necessarily connect to all of these peers itself.")
 	s.reliableNodes = s.metrics.newGauge(chiaServiceCrawler, "reliable_nodes", "reliable nodes are nodes that have port 8444 open and have available space for more peer connections")
@@ -108,6 +115,9 @@ func (s *CrawlerServiceMetrics) initMaxmindASNDB() error {
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with current/initial data
 func (s *CrawlerServiceMetrics) InitialData() {
+	// Only get the version on an initial or reconnection
+	utils.LogErr(s.metrics.client.CrawlerService.GetVersion(&rpc.GetVersionOptions{}))
+
 	utils.LogErr(s.metrics.client.CrawlerService.GetPeerCounts())
 }
 
@@ -116,6 +126,7 @@ func (s *CrawlerServiceMetrics) SetupPollingMetrics() {}
 
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *CrawlerServiceMetrics) Disconnected() {
+	s.version.Reset()
 	s.totalNodes5Days.Unregister()
 	s.reliableNodes.Unregister()
 	s.ipv4Nodes5Days.Unregister()
@@ -132,6 +143,8 @@ func (s *CrawlerServiceMetrics) Reconnected() {
 // ReceiveResponse handles crawler responses that are returned over the websocket
 func (s *CrawlerServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	switch resp.Command {
+	case "get_version":
+		versionHelper(resp, s.version)
 	case "get_peer_counts":
 		fallthrough
 	case "loaded_initial_peers":

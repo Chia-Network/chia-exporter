@@ -23,6 +23,9 @@ type HarvesterServiceMetrics struct {
 	// Holds a reference to the main metrics container this is a part of
 	metrics *Metrics
 
+	// General Service Metrics
+	version *prometheus.GaugeVec
+
 	// Connection Metrics
 	connectionCount *prometheus.GaugeVec
 
@@ -48,6 +51,9 @@ type HarvesterServiceMetrics struct {
 
 // InitMetrics sets all the metrics properties
 func (s *HarvesterServiceMetrics) InitMetrics(network *string) {
+	// General Service Metrics
+	s.version = s.metrics.newGaugeVec(chiaServiceHarvester, "version", "The version of chia-blockchain the service is running", []string{"version"})
+
 	// Connection Metrics
 	s.connectionCount = s.metrics.newGaugeVec(chiaServiceHarvester, "connection_count", "Number of active connections for each type of peer", []string{"node_type"})
 
@@ -70,6 +76,9 @@ func (s *HarvesterServiceMetrics) InitMetrics(network *string) {
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with current/initial data
 func (s *HarvesterServiceMetrics) InitialData() {
+	// Only get the version on an initial or reconnection
+	utils.LogErr(s.metrics.client.HarvesterService.GetVersion(&rpc.GetVersionOptions{}))
+
 	s.httpGetPlots()
 }
 
@@ -106,6 +115,7 @@ func (s *HarvesterServiceMetrics) httpGetPlots() {
 
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *HarvesterServiceMetrics) Disconnected() {
+	s.version.Reset()
 	s.connectionCount.Reset()
 	s.totalPlots.Unregister()
 	s.plotFilesize.Reset()
@@ -123,6 +133,8 @@ func (s *HarvesterServiceMetrics) Reconnected() {
 // ReceiveResponse handles crawler responses that are returned over the websocket
 func (s *HarvesterServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	switch resp.Command {
+	case "get_version":
+		versionHelper(resp, s.version)
 	case "get_connections":
 		s.GetConnections(resp)
 	case "farming_info":

@@ -3,6 +3,7 @@ package metrics
 import (
 	"encoding/json"
 
+	"github.com/chia-network/go-chia-libs/pkg/rpc"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/chia-network/go-chia-libs/pkg/types"
@@ -20,6 +21,9 @@ type TimelordServiceMetrics struct {
 	// Holds a reference to the main metrics container this is a part of
 	metrics *Metrics
 
+	// General Service Metrics
+	version *prometheus.GaugeVec
+
 	// Timelord Metrics
 	fastestTimelord    *wrappedPrometheus.LazyCounter
 	slowTimelord       *wrappedPrometheus.LazyCounter
@@ -32,6 +36,9 @@ type TimelordServiceMetrics struct {
 
 // InitMetrics sets all the metrics properties
 func (s *TimelordServiceMetrics) InitMetrics(network *string) {
+	// General Service Metrics
+	s.version = s.metrics.newGaugeVec(chiaServiceTimelord, "version", "The version of chia-blockchain the service is running", []string{"version"})
+
 	s.fastestTimelord = s.metrics.newCounter(chiaServiceTimelord, "fastest_timelord", "Counter for how many times this timelord has been fastest since the exporter has been running")
 	s.slowTimelord = s.metrics.newCounter(chiaServiceTimelord, "slow_timelord", "Counter for how many times this timelord has NOT been the fastest since the exporter has been running")
 	s.estimatedIPS = s.metrics.newGauge(chiaServiceTimelord, "estimated_ips", "Current estimated IPS. Updated every time a new PoT Challenge is complete")
@@ -44,7 +51,8 @@ func (s *TimelordServiceMetrics) InitMetrics(network *string) {
 // InitialData is called on startup of the metrics server, to allow seeding metrics with
 // current/initial data
 func (s *TimelordServiceMetrics) InitialData() {
-	utils.LogErr(s.metrics.client.CrawlerService.GetPeerCounts())
+	// Only get the version on an initial or reconnection
+	utils.LogErr(s.metrics.client.TimelordService.GetVersion(&rpc.GetVersionOptions{}))
 }
 
 // SetupPollingMetrics starts any metrics that happen on an interval
@@ -52,6 +60,7 @@ func (s *TimelordServiceMetrics) SetupPollingMetrics() {}
 
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *TimelordServiceMetrics) Disconnected() {
+	s.version.Reset()
 	s.fastestTimelord.Unregister()
 	s.slowTimelord.Unregister()
 	s.estimatedIPS.Unregister()
@@ -67,6 +76,8 @@ func (s *TimelordServiceMetrics) Reconnected() {
 func (s *TimelordServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	//("finished_pot_challenge", "new_compact_proof", "skipping_peak", "new_peak")
 	switch resp.Command {
+	case "get_version":
+		versionHelper(resp, s.version)
 	case "finished_pot":
 		s.FinishedPoT(resp)
 	case "new_compact_proof":
