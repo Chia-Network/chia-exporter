@@ -500,6 +500,17 @@ func connectionCountHelper(resp *types.WebsocketResponse, connectionCount *prome
 	connectionCount.WithLabelValues("wallet").Set(wallet)
 }
 
+func versionHelper(resp *types.WebsocketResponse, versionMetric *prometheus.GaugeVec) {
+	version := &rpc.GetVersionResponse{}
+	err := json.Unmarshal(resp.Data, version)
+	if err != nil {
+		log.Errorf("Error unmarshalling: %s\n", err.Error())
+		return
+	}
+
+	versionMetric.WithLabelValues(version.Version).Set(1)
+}
+
 type debugEvent struct {
 	Data map[string]float64 `json:"data"`
 }

@@ -34,6 +34,9 @@ type FullNodeServiceMetrics struct {
 	// Holds a reference to the main metrics container this is a part of
 	metrics *Metrics
 
+	// General Service Metrics
+	version *prometheus.GaugeVec
+
 	// GetBlockchainState Metrics
 	difficulty          *wrappedPrometheus.LazyGauge
 	mempoolCost         *wrappedPrometheus.LazyGauge
@@ -94,6 +97,9 @@ type FullNodeServiceMetrics struct {
 
 // InitMetrics sets all the metrics properties
 func (s *FullNodeServiceMetrics) InitMetrics(network *string) {
+	// General Service Metrics
+	s.version = s.metrics.newGaugeVec(chiaServiceFullNode, "version", "The version of chia-blockchain the service is running", []string{"version"})
+
 	// BlockchainState Metrics
 	s.difficulty = s.metrics.newGauge(chiaServiceFullNode, "difficulty", "Current network difficulty")
 	s.mempoolCost = s.metrics.newGauge(chiaServiceFullNode, "mempool_cost", "Current mempool size in cost")
@@ -151,6 +157,9 @@ func (s *FullNodeServiceMetrics) InitMetrics(network *string) {
 // InitialData is called on startup of the metrics server, to allow seeding metrics with
 // current/initial data
 func (s *FullNodeServiceMetrics) InitialData() {
+	// Only get the version on an initial or reconnection
+	utils.LogErr(s.metrics.client.FullNodeService.GetVersion(&rpc.GetVersionOptions{}))
+
 	// Ask for some initial data so we dont have to wait as long
 	utils.LogErr(s.metrics.client.FullNodeService.GetBlockchainState()) // Also calls get_connections once we get the response
 	utils.LogErr(s.metrics.client.FullNodeService.GetBlockCountMetrics())
@@ -170,6 +179,7 @@ func (s *FullNodeServiceMetrics) SetupPollingMetrics() {}
 
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *FullNodeServiceMetrics) Disconnected() {
+	s.version.Reset()
 	s.difficulty.Unregister()
 	s.mempoolCost.Unregister()
 	s.mempoolMinFee.Reset()
@@ -212,6 +222,8 @@ func (s *FullNodeServiceMetrics) Reconnected() {
 // ReceiveResponse handles full node related responses that are returned over the websocket
 func (s *FullNodeServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	switch resp.Command {
+	case "get_version":
+		versionHelper(resp, s.version)
 	case "get_blockchain_state":
 		s.GetBlockchainState(resp)
 		// Ask for connection info when we get updated blockchain state

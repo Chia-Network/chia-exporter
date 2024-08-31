@@ -23,6 +23,9 @@ type WalletServiceMetrics struct {
 	// Holds a reference to the main metrics container this is a part of
 	metrics *Metrics
 
+	// General Service Metrics
+	version *prometheus.GaugeVec
+
 	// Connection Metrics
 	connectionCount *prometheus.GaugeVec
 
@@ -40,6 +43,9 @@ type WalletServiceMetrics struct {
 
 // InitMetrics sets all the metrics properties
 func (s *WalletServiceMetrics) InitMetrics(network *string) {
+	// General Service Metrics
+	s.version = s.metrics.newGaugeVec(chiaServiceWallet, "version", "The version of chia-blockchain the service is running", []string{"version"})
+
 	// Connection Metrics
 	s.connectionCount = s.metrics.newGaugeVec(chiaServiceWallet, "connection_count", "Number of active connections for each type of peer", []string{"node_type"})
 
@@ -59,6 +65,9 @@ func (s *WalletServiceMetrics) InitMetrics(network *string) {
 // InitialData is called on startup of the metrics server, to allow seeding metrics with
 // current/initial data
 func (s *WalletServiceMetrics) InitialData() {
+	// Only get the version on an initial or reconnection
+	utils.LogErr(s.metrics.client.WalletService.GetVersion(&rpc.GetVersionOptions{}))
+
 	utils.LogErr(s.metrics.client.WalletService.GetWallets(&rpc.GetWalletsOptions{}))
 	utils.LogErr(s.metrics.client.WalletService.GetSyncStatus())
 }
@@ -75,6 +84,7 @@ func (s *WalletServiceMetrics) SetupPollingMetrics() {
 
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *WalletServiceMetrics) Disconnected() {
+	s.version.Reset()
 	s.connectionCount.Reset()
 	s.walletSynced.Unregister()
 	s.confirmedBalance.Reset()
@@ -92,6 +102,8 @@ func (s *WalletServiceMetrics) Reconnected() {
 // ReceiveResponse handles wallet responses that are returned over the websocket
 func (s *WalletServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	switch resp.Command {
+	case "get_version":
+		versionHelper(resp, s.version)
 	case "get_connections":
 		s.GetConnections(resp)
 	case "coin_added":

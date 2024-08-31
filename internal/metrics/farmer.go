@@ -22,6 +22,9 @@ type FarmerServiceMetrics struct {
 	// Holds a reference to the main metrics container this is a part of
 	metrics *Metrics
 
+	// General Service Metrics
+	version *prometheus.GaugeVec
+
 	// Connection Metrics
 	connectionCount *prometheus.GaugeVec
 
@@ -58,6 +61,9 @@ type FarmerServiceMetrics struct {
 
 // InitMetrics sets all the metrics properties
 func (s *FarmerServiceMetrics) InitMetrics(network *string) {
+	// General Service Metrics
+	s.version = s.metrics.newGaugeVec(chiaServiceFarmer, "version", "The version of chia-blockchain the service is running", []string{"version"})
+
 	s.totalPlotsValue = map[types.Bytes32]uint64{}
 	s.nodeIDToHostname = map[types.Bytes32]string{}
 
@@ -89,6 +95,9 @@ func (s *FarmerServiceMetrics) InitMetrics(network *string) {
 
 // InitialData is called on startup of the metrics server, to allow seeding metrics with current/initial data
 func (s *FarmerServiceMetrics) InitialData() {
+	// Only get the version on an initial or reconnection
+	utils.LogErr(s.metrics.client.FarmerService.GetVersion(&rpc.GetVersionOptions{}))
+
 	utils.LogErr(s.metrics.client.FarmerService.GetConnections(&rpc.GetConnectionsOptions{}))
 }
 
@@ -97,6 +106,7 @@ func (s *FarmerServiceMetrics) SetupPollingMetrics() {}
 
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *FarmerServiceMetrics) Disconnected() {
+	s.version.Reset()
 	s.connectionCount.Reset()
 	s.plotFilesize.Reset()
 	s.plotCount.Reset()
@@ -113,6 +123,8 @@ func (s *FarmerServiceMetrics) Reconnected() {
 // ReceiveResponse handles crawler responses that are returned over the websocket
 func (s *FarmerServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	switch resp.Command {
+	case "get_version":
+		versionHelper(resp, s.version)
 	case "get_connections":
 		s.GetConnections(resp)
 	case "new_farming_info":
