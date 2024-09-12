@@ -20,13 +20,28 @@ var serveCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalf("Error parsing log level: %s\n", err.Error())
 		}
-		m, err := metrics.NewMetrics(uint16(viper.GetInt("metrics-port")), level)
-		if err != nil {
-			log.Fatalln(err.Error())
-		}
 
-		// Run this in the background, so the metrics healthz endpoint can come up while waiting for Chia
-		go startWebsocket(m)
+		var m *metrics.Metrics
+
+		// Loop until we get a connection
+		// Retry every 5 seconds to connect to the server until it succeeds or the app is stopped
+		// We reload the metrics client every time to get a fresh chia config, in case certs or other config changed
+		// that enable a successful connection at that point
+		for {
+			m, err = metrics.NewMetrics(uint16(viper.GetInt("metrics-port")), level)
+			if err != nil {
+				log.Fatalln(err.Error())
+			}
+
+			err = startWebsocket(m)
+			if err != nil {
+				log.Printf("error starting websocket. Creating new metrics client and trying again in 5 seconds: %s\n", err.Error())
+				time.Sleep(5 * time.Second)
+				continue
+			}
+
+			break
+		}
 
 		// Close the websocket when the app is closing
 		// @TODO need to actually listen for a signal and call this then, otherwise it doesn't actually get called
@@ -46,17 +61,10 @@ func init() {
 	rootCmd.AddCommand(serveCmd)
 }
 
-func startWebsocket(m *metrics.Metrics) {
-	// Loop until we get a connection or cancel
-	// This enables starting the metrics exporter even if the chia RPC service is not up/responding
-	// It just retries every 5 seconds to connect to the RPC server until it succeeds or the app is stopped
-	for {
-		err := m.OpenWebsocket()
-		if err != nil {
-			log.Errorln(err.Error())
-			time.Sleep(5 * time.Second)
-			continue
-		}
-		break
+func startWebsocket(m *metrics.Metrics) error {
+	err := m.OpenWebsocket()
+	if err != nil {
+		return err
 	}
+	return nil
 }
