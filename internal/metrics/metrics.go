@@ -138,6 +138,12 @@ func NewMetrics(port uint16, logLevel log.Level, version string) (*Metrics, erro
 }
 
 func (m *Metrics) setNewClient() error {
+	if m.client != nil {
+		err := m.client.Close()
+		if err != nil {
+			log.Error("Error closing old client", "error", err)
+		}
+	}
 	client, err := rpc.NewClient(rpc.ConnectionModeWebsocket, rpc.WithAutoConfig(), rpc.WithBaseURL(&url.URL{
 		Scheme: "wss",
 		Host:   viper.GetString("hostname"),
@@ -353,7 +359,6 @@ func (m *Metrics) OpenWebsocket() error {
 		for {
 			// If we don't get any events for 5 minutes, we'll reset the connection
 			time.Sleep(10 * time.Second)
-
 			if m.lastReceive.Before(time.Now().Add(-5 * time.Minute)) {
 				cancel()
 				log.Info("Websocket connection seems down. Recreating...")
@@ -372,7 +377,7 @@ func (m *Metrics) OpenWebsocket() error {
 
 				// Got the new connection open, so stop the loop on the old connection
 				// since we called this function again and a new loop was created
-				break
+				return
 			}
 		}
 	}()
@@ -382,9 +387,7 @@ func (m *Metrics) OpenWebsocket() error {
 
 // CloseWebsocket closes the websocket connection
 func (m *Metrics) CloseWebsocket() error {
-	// @TODO reenable once fixed in the upstream dep
-	//return m.client.DaemonService.CloseConnection()
-	return nil
+	return m.client.Close()
 }
 
 // StartServer starts the metrics server
