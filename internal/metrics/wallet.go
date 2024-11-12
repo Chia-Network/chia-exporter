@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -73,13 +74,20 @@ func (s *WalletServiceMetrics) InitialData() {
 }
 
 // SetupPollingMetrics starts any metrics that happen on an interval
-func (s *WalletServiceMetrics) SetupPollingMetrics() {
-	go func() {
+func (s *WalletServiceMetrics) SetupPollingMetrics(ctx context.Context) {
+	// Things that update in the background
+	go func(ctx context.Context) {
 		for {
-			utils.LogErr(s.metrics.client.WalletService.GetConnections(&rpc.GetConnectionsOptions{}))
-			time.Sleep(15 * time.Second)
+			select {
+			case <-ctx.Done():
+				// Exit the loop if the context is canceled
+				return
+			default:
+				utils.LogErr(s.metrics.client.WalletService.GetConnections(&rpc.GetConnectionsOptions{}))
+				time.Sleep(15 * time.Second)
+			}
 		}
-	}()
+	}(ctx)
 }
 
 // Disconnected clears/unregisters metrics when the connection drops

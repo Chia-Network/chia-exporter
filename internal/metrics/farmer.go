@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -102,7 +103,7 @@ func (s *FarmerServiceMetrics) InitialData() {
 }
 
 // SetupPollingMetrics starts any metrics that happen on an interval
-func (s *FarmerServiceMetrics) SetupPollingMetrics() {}
+func (s *FarmerServiceMetrics) SetupPollingMetrics(ctx context.Context) {}
 
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *FarmerServiceMetrics) Disconnected() {

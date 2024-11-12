@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -122,7 +123,7 @@ func (s *CrawlerServiceMetrics) InitialData() {
 }
 
 // SetupPollingMetrics starts any metrics that happen on an interval
-func (s *CrawlerServiceMetrics) SetupPollingMetrics() {}
+func (s *CrawlerServiceMetrics) SetupPollingMetrics(ctx context.Context) {}
 
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *CrawlerServiceMetrics) Disconnected() {
