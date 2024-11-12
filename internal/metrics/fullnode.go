@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -164,18 +165,24 @@ func (s *FullNodeServiceMetrics) InitialData() {
 	utils.LogErr(s.metrics.client.FullNodeService.GetBlockchainState()) // Also calls get_connections once we get the response
 	utils.LogErr(s.metrics.client.FullNodeService.GetBlockCountMetrics())
 	s.GetFeeEstimates()
-
-	// Things that update in the background
-	go func() {
-		for {
-			s.RefreshFileSizes()
-			time.Sleep(30 * time.Second)
-		}
-	}()
 }
 
 // SetupPollingMetrics starts any metrics that happen on an interval
-func (s *FullNodeServiceMetrics) SetupPollingMetrics() {}
+func (s *FullNodeServiceMetrics) SetupPollingMetrics(ctx context.Context) {
+	// Things that update in the background
+	go func(ctx context.Context) {
+		for {
+			select {
+			case <-ctx.Done():
+				// Exit the loop if the context is canceled
+				return
+			default:
+				s.RefreshFileSizes()
+				time.Sleep(30 * time.Second)
+			}
+		}
+	}(ctx)
+}
 
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *FullNodeServiceMetrics) Disconnected() {

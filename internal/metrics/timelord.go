@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/chia-network/go-chia-libs/pkg/rpc"
@@ -56,7 +57,7 @@ func (s *TimelordServiceMetrics) InitialData() {
 }
 
 // SetupPollingMetrics starts any metrics that happen on an interval
-func (s *TimelordServiceMetrics) SetupPollingMetrics() {}
+func (s *TimelordServiceMetrics) SetupPollingMetrics(ctx context.Context) {}
 
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *TimelordServiceMetrics) Disconnected() {

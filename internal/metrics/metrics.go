@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -42,7 +43,7 @@ type serviceMetrics interface {
 
 	// SetupPollingMetrics Some services need data that doesn't have a good event to hook into
 	// In those cases, we have to fall back to polling
-	SetupPollingMetrics()
+	SetupPollingMetrics(ctx context.Context)
 
 	// ReceiveResponse is called when a response is received for the particular metrics service
 	ReceiveResponse(*types.WebsocketResponse)
@@ -332,9 +333,10 @@ func (m *Metrics) OpenWebsocket() error {
 		}
 	}
 
+	ctx, cancel := context.WithCancel(context.Background())
 	for _, service := range m.serviceMetrics {
 		service.InitialData()
-		service.SetupPollingMetrics()
+		service.SetupPollingMetrics(ctx)
 	}
 
 	m.lastReceive = time.Now()
@@ -344,6 +346,7 @@ func (m *Metrics) OpenWebsocket() error {
 			time.Sleep(10 * time.Second)
 
 			if m.lastReceive.Before(time.Now().Add(-5 * time.Minute)) {
+				cancel()
 				log.Info("Websocket connection seems down. Recreating...")
 				m.disconnectHandler()
 				err := m.setNewClient()
