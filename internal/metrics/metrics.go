@@ -77,18 +77,20 @@ type Metrics struct {
 	// All the serviceMetrics interfaces that are registered
 	serviceMetrics map[chiaService]serviceMetrics
 
-	buildInfoMetric *prometheus.Gauge
+	version         string
+	buildInfoMetric *prometheus.GaugeVec
 }
 
 // NewMetrics returns a new instance of metrics
 // All metrics are registered here
-func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
+func NewMetrics(port uint16, logLevel log.Level, version string) (*Metrics, error) {
 	var err error
 
 	metrics := &Metrics{
 		metricsPort:    port,
 		registry:       prometheus.NewRegistry(),
 		serviceMetrics: map[chiaService]serviceMetrics{},
+		version:        version,
 	}
 
 	log.SetLevel(logLevel)
@@ -148,6 +150,10 @@ func (m *Metrics) setNewClient() error {
 }
 
 func (m *Metrics) initMetrics() {
+	// Initialize global metrics
+	m.buildInfoMetric = m.newGaugeVec(chiaService("exporter"), "build_info", "Build info for chia exporter", []string{"version"})
+	m.buildInfoMetric.WithLabelValues(m.version).Set(1)
+
 	// Init each service's metrics
 	for _, service := range m.serviceMetrics {
 		service.InitMetrics(m.network)
