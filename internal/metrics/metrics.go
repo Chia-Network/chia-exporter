@@ -76,17 +76,21 @@ type Metrics struct {
 
 	// All the serviceMetrics interfaces that are registered
 	serviceMetrics map[chiaService]serviceMetrics
+
+	version         string
+	buildInfoMetric *prometheus.GaugeVec
 }
 
 // NewMetrics returns a new instance of metrics
 // All metrics are registered here
-func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
+func NewMetrics(port uint16, logLevel log.Level, version string) (*Metrics, error) {
 	var err error
 
 	metrics := &Metrics{
 		metricsPort:    port,
 		registry:       prometheus.NewRegistry(),
 		serviceMetrics: map[chiaService]serviceMetrics{},
+		version:        version,
 	}
 
 	log.SetLevel(logLevel)
@@ -128,10 +132,7 @@ func NewMetrics(port uint16, logLevel log.Level) (*Metrics, error) {
 	// If not, the reconnect handler will handle it later
 	_, _ = metrics.checkNetwork()
 
-	// Init each service's metrics
-	for _, service := range metrics.serviceMetrics {
-		service.InitMetrics(metrics.network)
-	}
+	metrics.initMetrics()
 
 	return metrics, nil
 }
@@ -146,6 +147,17 @@ func (m *Metrics) setNewClient() error {
 	}
 	m.client = client
 	return nil
+}
+
+func (m *Metrics) initMetrics() {
+	// Initialize global metrics
+	m.buildInfoMetric = m.newGaugeVec(chiaService("exporter"), "build_info", "Build info for chia exporter", []string{"version"})
+	m.buildInfoMetric.WithLabelValues(m.version).Set(1)
+
+	// Init each service's metrics
+	for _, service := range m.serviceMetrics {
+		service.InitMetrics(m.network)
+	}
 }
 
 func (m *Metrics) createDBClient() error {
@@ -327,10 +339,7 @@ func (m *Metrics) OpenWebsocket() error {
 	if changed {
 		m.registry = prometheus.NewRegistry()
 		m.dynamicPromHandler.updateHandler(promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
-		// Init each service's metrics
-		for _, service := range m.serviceMetrics {
-			service.InitMetrics(m.network)
-		}
+		m.initMetrics()
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -439,9 +448,9 @@ func (m *Metrics) reconnectHandler() {
 		log.Info("Network Changed, resetting all metrics")
 		m.registry = prometheus.NewRegistry()
 		m.dynamicPromHandler.updateHandler(promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{}))
-		// Init each service's metrics
+		m.initMetrics()
+		// Init each service's data
 		for _, service := range m.serviceMetrics {
-			service.InitMetrics(m.network)
 			service.InitialData()
 		}
 	} else {

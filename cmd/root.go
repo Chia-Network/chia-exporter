@@ -20,7 +20,15 @@ var (
 var rootCmd = &cobra.Command{
 	Use:     "chia-exporter",
 	Short:   "Prometheus metric exporter for Chia Blockchain",
-	Version: fmt.Sprintf("%s (%s)", gitVersion, buildTime),
+	Version: versionString(true),
+}
+
+func versionString(includeTime bool) string {
+	if includeTime {
+		return fmt.Sprintf("%s (%s)", gitVersion, buildTime)
+	}
+
+	return gitVersion
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

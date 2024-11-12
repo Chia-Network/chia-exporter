@@ -28,7 +28,7 @@ var serveCmd = &cobra.Command{
 		// We reload the metrics client every time to get a fresh chia config, in case certs or other config changed
 		// that enable a successful connection at that point
 		for {
-			m, err = metrics.NewMetrics(uint16(viper.GetInt("metrics-port")), level)
+			m, err = metrics.NewMetrics(uint16(viper.GetInt("metrics-port")), level, versionString(false))
 			if err != nil {
 				log.Fatalln(err.Error())
 			}
