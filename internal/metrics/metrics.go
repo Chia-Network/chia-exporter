@@ -7,6 +7,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
@@ -356,32 +359,52 @@ func (m *Metrics) OpenWebsocket() error {
 
 	m.lastReceive = time.Now()
 	go func() {
+		sighup := make(chan os.Signal, 1)
+		signal.Notify(sighup, syscall.SIGHUP)
+
 		for {
-			// If we don't get any events for 5 minutes, we'll reset the connection
-			time.Sleep(10 * time.Second)
-			if m.lastReceive.Before(time.Now().Add(-5 * time.Minute)) {
-				cancel()
-				log.Info("Websocket connection seems down. Recreating...")
-				m.disconnectHandler()
-				err := m.setNewClient()
+			select {
+			case <-sighup:
+				log.Info("Got SIGHUP. Recreating websocket connection...")
+				err := m.doTimeoutReconnect(cancel)
 				if err != nil {
-					log.Errorf("Error creating new client: %s", err.Error())
+					log.Errorf(err.Error())
 					continue
 				}
-
-				err = m.OpenWebsocket()
-				if err != nil {
-					log.Errorf("Error opening websocket on new client: %s", err.Error())
-					continue
-				}
-
-				// Got the new connection open, so stop the loop on the old connection
-				// since we called this function again and a new loop was created
 				return
+			case <-time.After(10 * time.Second):
+				// If we don't get any events for 5 minutes, we'll reset the connection
+				if m.lastReceive.Before(time.Now().Add(-5 * time.Minute)) {
+					log.Info("Websocket connection seems down. Recreating...")
+					err := m.doTimeoutReconnect(cancel)
+					if err != nil {
+						log.Errorf(err.Error())
+						continue
+					}
+					return
+				}
 			}
 		}
 	}()
 
+	return nil
+}
+
+func (m *Metrics) doTimeoutReconnect(cancel context.CancelFunc) error {
+	cancel()
+	m.disconnectHandler()
+	err := m.setNewClient()
+	if err != nil {
+		return fmt.Errorf("error creating new client: %w", err)
+	}
+
+	err = m.OpenWebsocket()
+	if err != nil {
+		return fmt.Errorf("error opening websocket on new client: %w", err)
+	}
+
+	// Got the new connection open, so stop the loop on the old connection
+	// since we called this function again and a new loop was created
 	return nil
 }
 
