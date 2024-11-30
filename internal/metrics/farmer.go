@@ -24,6 +24,7 @@ type FarmerServiceMetrics struct {
 	metrics *Metrics
 
 	// General Service Metrics
+	gotVersionResponse bool
 	version *prometheus.GaugeVec
 
 	// Connection Metrics
@@ -108,6 +109,7 @@ func (s *FarmerServiceMetrics) SetupPollingMetrics(ctx context.Context) {}
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *FarmerServiceMetrics) Disconnected() {
 	s.version.Reset()
+	s.gotVersionResponse = false
 	s.connectionCount.Reset()
 	s.plotFilesize.Reset()
 	s.plotCount.Reset()
@@ -123,9 +125,18 @@ func (s *FarmerServiceMetrics) Reconnected() {
 
 // ReceiveResponse handles crawler responses that are returned over the websocket
 func (s *FarmerServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
+	// Sometimes, when we reconnect, or start exporter before chia is running
+	// the daemon is up before the service, and the initial request for the version
+	// doesn't make it to the service
+	// daemon doesn't queue these messages for later, they just get dropped
+	if !s.gotVersionResponse {
+		utils.LogErr(s.metrics.client.FullNodeService.GetVersion(&rpc.GetVersionOptions{}))
+	}
+
 	switch resp.Command {
 	case "get_version":
 		versionHelper(resp, s.version)
+		s.gotVersionResponse = true
 	case "get_connections":
 		s.GetConnections(resp)
 	case "new_farming_info":

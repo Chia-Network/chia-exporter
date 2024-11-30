@@ -230,9 +230,9 @@ func (s *FullNodeServiceMetrics) Reconnected() {
 
 // ReceiveResponse handles full node related responses that are returned over the websocket
 func (s *FullNodeServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
-	// Sometimes, when we reconnect, or start exporter before the full node is up
-	// the daemon is up before the full node, and the initial request for the version
-	// doesn't make it to the service, since it wasn't up yet
+	// Sometimes, when we reconnect, or start exporter before chia is running
+	// the daemon is up before the service, and the initial request for the version
+	// doesn't make it to the service
 	// daemon doesn't queue these messages for later, they just get dropped
 	if !s.gotVersionResponse {
 		utils.LogErr(s.metrics.client.FullNodeService.GetVersion(&rpc.GetVersionOptions{}))
