@@ -424,6 +424,7 @@ func (s *FullNodeServiceMetrics) RefreshFileSizes() {
 	cfg, err := config.GetChiaConfig()
 	if err != nil {
 		log.Errorf("Error getting chia config: %s\n", err.Error())
+		return
 	}
 	database := cfg.GetFullPath(cfg.FullNode.DatabasePath)
 	databaseWal := fmt.Sprintf("%s-wal", database)
