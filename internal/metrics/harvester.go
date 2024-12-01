@@ -28,6 +28,8 @@ type HarvesterServiceMetrics struct {
 	gotVersionResponse bool
 	version *prometheus.GaugeVec
 
+	gotPlotsResponse bool
+
 	// Connection Metrics
 	connectionCount *prometheus.GaugeVec
 
@@ -126,6 +128,7 @@ func (s *HarvesterServiceMetrics) httpGetPlots() {
 func (s *HarvesterServiceMetrics) Disconnected() {
 	s.version.Reset()
 	s.gotVersionResponse = false
+	s.gotPlotsResponse = false
 	s.connectionCount.Reset()
 	s.totalPlots.Unregister()
 	s.plotFilesize.Reset()
@@ -149,6 +152,9 @@ func (s *HarvesterServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse)
 	if !s.gotVersionResponse {
 		utils.LogErr(s.metrics.client.FullNodeService.GetVersion(&rpc.GetVersionOptions{}))
 	}
+	if !s.gotPlotsResponse {
+		s.httpGetPlots()
+	}
 
 	switch resp.Command {
 	case "get_version":
@@ -160,6 +166,7 @@ func (s *HarvesterServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse)
 		s.FarmingInfo(resp)
 	case "get_plots":
 		s.GetPlots(resp)
+		s.gotPlotsResponse = true
 	case "debug":
 		debugHelper(resp, s.debug)
 	}

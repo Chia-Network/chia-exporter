@@ -28,6 +28,8 @@ type WalletServiceMetrics struct {
 	gotVersionResponse bool
 	version *prometheus.GaugeVec
 
+	gotWalletsResponse bool
+
 	// Connection Metrics
 	connectionCount *prometheus.GaugeVec
 
@@ -95,6 +97,7 @@ func (s *WalletServiceMetrics) SetupPollingMetrics(ctx context.Context) {
 func (s *WalletServiceMetrics) Disconnected() {
 	s.version.Reset()
 	s.gotVersionResponse = false
+	s.gotWalletsResponse = false
 	s.connectionCount.Reset()
 	s.walletSynced.Unregister()
 	s.confirmedBalance.Reset()
@@ -118,6 +121,9 @@ func (s *WalletServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 	if !s.gotVersionResponse {
 		utils.LogErr(s.metrics.client.FullNodeService.GetVersion(&rpc.GetVersionOptions{}))
 	}
+	if !s.gotWalletsResponse {
+		utils.LogErr(s.metrics.client.WalletService.GetWallets(&rpc.GetWalletsOptions{}))
+	}
 
 	switch resp.Command {
 	case "get_version":
@@ -135,6 +141,7 @@ func (s *WalletServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 		s.GetWalletBalance(resp)
 	case "get_wallets":
 		s.GetWallets(resp)
+		s.gotWalletsResponse = true
 	case "debug":
 		debugHelper(resp, s.debug)
 	}
