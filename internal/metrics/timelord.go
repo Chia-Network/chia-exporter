@@ -23,6 +23,7 @@ type TimelordServiceMetrics struct {
 	metrics *Metrics
 
 	// General Service Metrics
+	gotVersionResponse bool
 	version *prometheus.GaugeVec
 
 	// Timelord Metrics
@@ -62,6 +63,7 @@ func (s *TimelordServiceMetrics) SetupPollingMetrics(ctx context.Context) {}
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *TimelordServiceMetrics) Disconnected() {
 	s.version.Reset()
+	s.gotVersionResponse = false
 	s.fastestTimelord.Unregister()
 	s.slowTimelord.Unregister()
 	s.estimatedIPS.Unregister()
@@ -75,10 +77,19 @@ func (s *TimelordServiceMetrics) Reconnected() {
 
 // ReceiveResponse handles crawler responses that are returned over the websocket
 func (s *TimelordServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
+	// Sometimes, when we reconnect, or start exporter before chia is running
+	// the daemon is up before the service, and the initial request for the version
+	// doesn't make it to the service
+	// daemon doesn't queue these messages for later, they just get dropped
+	if !s.gotVersionResponse {
+		utils.LogErr(s.metrics.client.FullNodeService.GetVersion(&rpc.GetVersionOptions{}))
+	}
+
 	//("finished_pot_challenge", "new_compact_proof", "skipping_peak", "new_peak")
 	switch resp.Command {
 	case "get_version":
 		versionHelper(resp, s.version)
+		s.gotVersionResponse = true
 	case "finished_pot":
 		s.FinishedPoT(resp)
 	case "new_compact_proof":

@@ -25,7 +25,10 @@ type WalletServiceMetrics struct {
 	metrics *Metrics
 
 	// General Service Metrics
+	gotVersionResponse bool
 	version *prometheus.GaugeVec
+
+	gotWalletsResponse bool
 
 	// Connection Metrics
 	connectionCount *prometheus.GaugeVec
@@ -93,6 +96,8 @@ func (s *WalletServiceMetrics) SetupPollingMetrics(ctx context.Context) {
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *WalletServiceMetrics) Disconnected() {
 	s.version.Reset()
+	s.gotVersionResponse = false
+	s.gotWalletsResponse = false
 	s.connectionCount.Reset()
 	s.walletSynced.Unregister()
 	s.confirmedBalance.Reset()
@@ -109,9 +114,21 @@ func (s *WalletServiceMetrics) Reconnected() {
 
 // ReceiveResponse handles wallet responses that are returned over the websocket
 func (s *WalletServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
+	// Sometimes, when we reconnect, or start exporter before chia is running
+	// the daemon is up before the service, and the initial request for the version
+	// doesn't make it to the service
+	// daemon doesn't queue these messages for later, they just get dropped
+	if !s.gotVersionResponse {
+		utils.LogErr(s.metrics.client.FullNodeService.GetVersion(&rpc.GetVersionOptions{}))
+	}
+	if !s.gotWalletsResponse {
+		utils.LogErr(s.metrics.client.WalletService.GetWallets(&rpc.GetWalletsOptions{}))
+	}
+
 	switch resp.Command {
 	case "get_version":
 		versionHelper(resp, s.version)
+		s.gotVersionResponse = true
 	case "get_connections":
 		s.GetConnections(resp)
 	case "coin_added":
@@ -124,6 +141,7 @@ func (s *WalletServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
 		s.GetWalletBalance(resp)
 	case "get_wallets":
 		s.GetWallets(resp)
+		s.gotWalletsResponse = true
 	case "debug":
 		debugHelper(resp, s.debug)
 	}

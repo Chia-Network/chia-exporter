@@ -36,7 +36,8 @@ type FullNodeServiceMetrics struct {
 	metrics *Metrics
 
 	// General Service Metrics
-	version *prometheus.GaugeVec
+	gotVersionResponse bool
+	version            *prometheus.GaugeVec
 
 	// GetBlockchainState Metrics
 	difficulty          *wrappedPrometheus.LazyGauge
@@ -187,6 +188,7 @@ func (s *FullNodeServiceMetrics) SetupPollingMetrics(ctx context.Context) {
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *FullNodeServiceMetrics) Disconnected() {
 	s.version.Reset()
+	s.gotVersionResponse = false
 	s.difficulty.Unregister()
 	s.mempoolCost.Unregister()
 	s.mempoolMinFee.Reset()
@@ -228,9 +230,18 @@ func (s *FullNodeServiceMetrics) Reconnected() {
 
 // ReceiveResponse handles full node related responses that are returned over the websocket
 func (s *FullNodeServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
+	// Sometimes, when we reconnect, or start exporter before chia is running
+	// the daemon is up before the service, and the initial request for the version
+	// doesn't make it to the service
+	// daemon doesn't queue these messages for later, they just get dropped
+	if !s.gotVersionResponse {
+		utils.LogErr(s.metrics.client.FullNodeService.GetVersion(&rpc.GetVersionOptions{}))
+	}
+
 	switch resp.Command {
 	case "get_version":
 		versionHelper(resp, s.version)
+		s.gotVersionResponse = true
 	case "get_blockchain_state":
 		s.GetBlockchainState(resp)
 		// Ask for connection info when we get updated blockchain state
@@ -424,6 +435,7 @@ func (s *FullNodeServiceMetrics) RefreshFileSizes() {
 	cfg, err := config.GetChiaConfig()
 	if err != nil {
 		log.Errorf("Error getting chia config: %s\n", err.Error())
+		return
 	}
 	database := cfg.GetFullPath(cfg.FullNode.DatabasePath)
 	databaseWal := fmt.Sprintf("%s-wal", database)

@@ -30,6 +30,7 @@ type CrawlerServiceMetrics struct {
 	metrics *Metrics
 
 	// General Service Metrics
+	gotVersionResponse bool
 	version *prometheus.GaugeVec
 
 	// Current network
@@ -128,6 +129,7 @@ func (s *CrawlerServiceMetrics) SetupPollingMetrics(ctx context.Context) {}
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *CrawlerServiceMetrics) Disconnected() {
 	s.version.Reset()
+	s.gotVersionResponse = false
 	s.totalNodes5Days.Unregister()
 	s.reliableNodes.Unregister()
 	s.ipv4Nodes5Days.Unregister()
@@ -143,9 +145,18 @@ func (s *CrawlerServiceMetrics) Reconnected() {
 
 // ReceiveResponse handles crawler responses that are returned over the websocket
 func (s *CrawlerServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
+	// Sometimes, when we reconnect, or start exporter before chia is running
+	// the daemon is up before the service, and the initial request for the version
+	// doesn't make it to the service
+	// daemon doesn't queue these messages for later, they just get dropped
+	if !s.gotVersionResponse {
+		utils.LogErr(s.metrics.client.FullNodeService.GetVersion(&rpc.GetVersionOptions{}))
+	}
+
 	switch resp.Command {
 	case "get_version":
 		versionHelper(resp, s.version)
+		s.gotVersionResponse = true
 	case "get_peer_counts":
 		fallthrough
 	case "loaded_initial_peers":

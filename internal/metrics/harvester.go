@@ -25,7 +25,10 @@ type HarvesterServiceMetrics struct {
 	metrics *Metrics
 
 	// General Service Metrics
+	gotVersionResponse bool
 	version *prometheus.GaugeVec
+
+	gotPlotsResponse bool
 
 	// Connection Metrics
 	connectionCount *prometheus.GaugeVec
@@ -124,6 +127,8 @@ func (s *HarvesterServiceMetrics) httpGetPlots() {
 // Disconnected clears/unregisters metrics when the connection drops
 func (s *HarvesterServiceMetrics) Disconnected() {
 	s.version.Reset()
+	s.gotVersionResponse = false
+	s.gotPlotsResponse = false
 	s.connectionCount.Reset()
 	s.totalPlots.Unregister()
 	s.plotFilesize.Reset()
@@ -140,15 +145,28 @@ func (s *HarvesterServiceMetrics) Reconnected() {
 
 // ReceiveResponse handles crawler responses that are returned over the websocket
 func (s *HarvesterServiceMetrics) ReceiveResponse(resp *types.WebsocketResponse) {
+	// Sometimes, when we reconnect, or start exporter before chia is running
+	// the daemon is up before the service, and the initial request for the version
+	// doesn't make it to the service
+	// daemon doesn't queue these messages for later, they just get dropped
+	if !s.gotVersionResponse {
+		utils.LogErr(s.metrics.client.FullNodeService.GetVersion(&rpc.GetVersionOptions{}))
+	}
+	if !s.gotPlotsResponse {
+		s.httpGetPlots()
+	}
+
 	switch resp.Command {
 	case "get_version":
 		versionHelper(resp, s.version)
+		s.gotVersionResponse = true
 	case "get_connections":
 		s.GetConnections(resp)
 	case "farming_info":
 		s.FarmingInfo(resp)
 	case "get_plots":
 		s.GetPlots(resp)
+		s.gotPlotsResponse = true
 	case "debug":
 		debugHelper(resp, s.debug)
 	}
