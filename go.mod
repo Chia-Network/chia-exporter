@@ -5,7 +5,7 @@ go 1.22.0
 toolchain go1.23.3
 
 require (
-	github.com/chia-network/go-chia-libs v0.20.2
+	github.com/chia-network/go-chia-libs v0.20.3
 	github.com/chia-network/go-modules v0.0.8
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/oschwald/maxminddb-golang v1.13.1
