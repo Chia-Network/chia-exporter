@@ -10,6 +10,6 @@ on:
 
 jobs:
   package:
-    uses: Chia-Network/actions/.github/workflows/docker-build.yaml@main
+    uses: Chia-Network/actions/.github/workflows/docker-build.yaml@qemu-latest-binfmt
     with:
       push: ${{ github.event_name != 'pull_request' }}
