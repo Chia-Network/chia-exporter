@@ -1,18 +1,18 @@
 module github.com/chia-network/chia-exporter
 
-go 1.22.0
+go 1.23.0
 
-toolchain go1.23.3
+toolchain go1.24.1
 
 require (
-	github.com/chia-network/go-chia-libs v0.21.0
-	github.com/chia-network/go-modules v0.0.8
+	github.com/chia-network/go-chia-libs v0.21.1
+	github.com/chia-network/go-modules v0.0.9
 	github.com/go-sql-driver/mysql v1.9.1
 	github.com/oschwald/maxminddb-golang v1.13.1
 	github.com/prometheus/client_golang v1.21.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.9.1
-	github.com/spf13/viper v1.20.0
+	github.com/spf13/viper v1.20.1
 )
 
 require (
@@ -40,7 +40,7 @@ require (
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/sys v0.29.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/protobuf v1.36.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
