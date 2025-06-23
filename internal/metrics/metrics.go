@@ -251,7 +251,7 @@ func (m *Metrics) newGauge(service chiaService, name string, help string) *wrapp
 	return lg
 }
 
-// newGauge returns a gaugeVec that follows naming conventions and registers it with the prometheus collector
+// newGaugeVec returns a gaugeVec that follows naming conventions and registers it with the prometheus collector
 // This doesn't need a lazy wrapper, as they're inherently lazy registered for each label value provided
 func (m *Metrics) newGaugeVec(service chiaService, name string, help string, labels []string) *prometheus.GaugeVec {
 	opts := prometheus.GaugeOpts{
@@ -274,7 +274,7 @@ func (m *Metrics) newGaugeVec(service chiaService, name string, help string, lab
 	return gm
 }
 
-// newGauge returns a counter that follows naming conventions and registers it with the prometheus collector
+// newCounter returns a counter that follows naming conventions and registers it with the prometheus collector
 func (m *Metrics) newCounter(service chiaService, name string, help string) *wrappedPrometheus.LazyCounter {
 	opts := prometheus.CounterOpts{
 		Namespace: "chia",
