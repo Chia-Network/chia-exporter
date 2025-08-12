@@ -13,7 +13,7 @@ jobs:
       - name: Mark git directory safe
         uses: Chia-Network/actions/git-mark-workspace-safe@main
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Test
         run: make test
