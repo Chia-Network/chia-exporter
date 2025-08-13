@@ -24,7 +24,7 @@ jobs:
       - uses: Chia-Network/actions/git-mark-workspace-safe@main
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Build Binary
         env:
@@ -48,7 +48,7 @@ jobs:
         GOARCH: ["amd64", "arm64"]
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set Env
         uses: Chia-Network/actions/setjobenv@main
@@ -90,7 +90,7 @@ jobs:
     needs:
       - installers
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set Env
         uses: Chia-Network/actions/setjobenv@main
