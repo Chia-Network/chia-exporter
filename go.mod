@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.24.1
 
 require (
-	github.com/chia-network/go-chia-libs v0.22.0
+	github.com/chia-network/go-chia-libs v0.23.0
 	github.com/chia-network/go-modules v0.0.9
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/oschwald/maxminddb-golang v1.13.1
@@ -32,7 +32,7 @@ require (
 	github.com/prometheus/common v0.65.0 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
-	github.com/samber/mo v1.13.0 // indirect
+	github.com/samber/mo v1.15.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.12.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
