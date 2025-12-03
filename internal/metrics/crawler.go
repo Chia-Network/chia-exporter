@@ -31,7 +31,7 @@ type CrawlerServiceMetrics struct {
 
 	// General Service Metrics
 	gotVersionResponse bool
-	version *prometheus.GaugeVec
+	version            *prometheus.GaugeVec
 
 	// Current network
 	network *string

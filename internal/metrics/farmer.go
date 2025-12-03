@@ -25,7 +25,7 @@ type FarmerServiceMetrics struct {
 
 	// General Service Metrics
 	gotVersionResponse bool
-	version *prometheus.GaugeVec
+	version            *prometheus.GaugeVec
 
 	// Connection Metrics
 	connectionCount *prometheus.GaugeVec

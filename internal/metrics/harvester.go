@@ -26,7 +26,7 @@ type HarvesterServiceMetrics struct {
 
 	// General Service Metrics
 	gotVersionResponse bool
-	version *prometheus.GaugeVec
+	version            *prometheus.GaugeVec
 
 	gotPlotsResponse bool
 

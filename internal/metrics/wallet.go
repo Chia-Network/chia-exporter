@@ -26,7 +26,7 @@ type WalletServiceMetrics struct {
 
 	// General Service Metrics
 	gotVersionResponse bool
-	version *prometheus.GaugeVec
+	version            *prometheus.GaugeVec
 
 	gotWalletsResponse bool
 
