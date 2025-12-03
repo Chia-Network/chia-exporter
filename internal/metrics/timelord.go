@@ -24,7 +24,7 @@ type TimelordServiceMetrics struct {
 
 	// General Service Metrics
 	gotVersionResponse bool
-	version *prometheus.GaugeVec
+	version            *prometheus.GaugeVec
 
 	// Timelord Metrics
 	fastestTimelord    *wrappedPrometheus.LazyCounter

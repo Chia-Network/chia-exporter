@@ -368,7 +368,7 @@ func (m *Metrics) OpenWebsocket() error {
 				log.Info("Got SIGHUP. Recreating websocket connection...")
 				err := m.doTimeoutReconnect(cancel)
 				if err != nil {
-					log.Errorf(err.Error())
+					log.Error(err.Error())
 					continue
 				}
 				return
@@ -378,7 +378,7 @@ func (m *Metrics) OpenWebsocket() error {
 					log.Info("Websocket connection seems down. Recreating...")
 					err := m.doTimeoutReconnect(cancel)
 					if err != nil {
-						log.Errorf(err.Error())
+						log.Error(err.Error())
 						continue
 					}
 					return
