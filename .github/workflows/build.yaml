@@ -58,7 +58,7 @@ jobs:
       - name: Install fpm
         run: sudo gem install fpm
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           name: chia-exporter-${{ matrix.GOOS }}-${{ matrix.GOARCH }}
           path: artifacts
@@ -97,7 +97,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           path: artifacts
 
