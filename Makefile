@@ -62,13 +62,16 @@ $(TEST_TARGETS): test
 check test tests: fmt lint vet staticcheck errcheck vulncheck; $(info $(M) running $(NAME:%=% )tests…) @ ## Run tests
 	$Q $(GO) test -timeout $(TIMEOUT)s $(ARGS) $(TESTPKGS)
 
-.PHONY: lint
-lint: | $(GOLINT) ; $(info $(M) running golint…) @ ## Run golint
-	$Q $(GOLINT) -set_exit_status $(PKGS)
-
 .PHONY: fmt
 fmt: ; $(info $(M) running gofmt…) @ ## Run gofmt on all source files
 	$Q $(GO) fmt $(PKGS)
+
+# Run fmt before any linter so parallel `-jN` doesn't change files while a linter is mid flight.
+lint vet staticcheck errcheck vulncheck: fmt
+
+.PHONY: lint
+lint: | $(GOLINT) ; $(info $(M) running golint…) @ ## Run golint
+	$Q $(GOLINT) -set_exit_status $(PKGS)
 
 .PHONY: vet
 vet: ; $(info $(M) running go vet…) @ ## Run go vet on all source files
