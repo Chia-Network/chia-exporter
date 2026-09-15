@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/chia-network/go-chia-libs v1.4.0
 	github.com/chia-network/go-modules v1.0.1
-	github.com/go-sql-driver/mysql v1.10.0
+	github.com/go-sql-driver/mysql v1.10.1
 	github.com/oschwald/maxminddb-golang v1.13.1
 	github.com/prometheus/client_golang v1.24.1
 	github.com/sirupsen/logrus v1.10.2
